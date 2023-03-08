@@ -1,9 +1,9 @@
 #include "topk.h"
 
 // Insert with dummy head
-void insert(struct node *head, char *word)
+void insert(node *head, char *word)
 {
-    struct node *cur = head;
+    node *cur = head;
 
     while (cur->next && strcmp(cur->next->word, word) != 0)
     {
@@ -22,7 +22,7 @@ void insert(struct node *head, char *word)
         return;
     }
 
-    struct node *newNode = (struct node *)malloc(sizeof(struct node));
+    node *newNode = (node *)malloc(sizeof(node));
     newNode->word = word;
     newNode->freq = 1;
     newNode->prev = cur;
@@ -31,7 +31,7 @@ void insert(struct node *head, char *word)
     return;
 }
 
-void swap(struct node *a, struct node *b)
+void swap(node *a, node *b)
 {
     char *aWord = a->word;
     int aFreq = a->freq;
@@ -41,10 +41,10 @@ void swap(struct node *a, struct node *b)
     b->word = aWord;
 }
 
-void sort(struct node *head)
+void sort(node *head)
 {
-    struct node *cur = NULL;
-    struct node *idx = NULL;
+    node *cur = NULL;
+    node *idx = NULL;
 
     for (cur = head->next; cur->next; cur = cur->next)
     {
@@ -70,7 +70,7 @@ char **topKFrequent(char **words, int wordsSize, int k, int *returnSize)
     }
 
     // Dummy head
-    struct node *head = (struct node *)malloc(sizeof(struct node));
+    node *head = (node *)malloc(sizeof(node));
     head->word = "";
     head->freq = INT_MAX;
     head->next = NULL;
@@ -79,7 +79,7 @@ char **topKFrequent(char **words, int wordsSize, int k, int *returnSize)
     {
         insert(head, words[i]);
     }
-    struct node *cur = head->next;
+    node *cur = head->next;
     sort(head);
 
     char **res = (char **)malloc(sizeof(char *) * k);
