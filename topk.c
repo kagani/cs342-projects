@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 
 struct node
 {
@@ -8,76 +9,102 @@ struct node
     struct node *prev;
 };
 
+// Insert with dummy head
+void insert(struct node *head, char *word)
+{
+    struct node *cur = head;
+
+    while (cur->next && strcmp(cur->next->word, word) != 0)
+    {
+        cur = cur->next;
+    }
+
+    if (cur->next && strcmp(cur->next->word, word) == 0)
+    {
+        cur->next->freq++;
+        return;
+    }
+
+    if (strcmp(cur->word, word) == 0)
+    {
+        cur->freq++;
+        return;
+    }
+
+    struct node *newNode = (struct node *)malloc(sizeof(struct node));
+    newNode->word = word;
+    newNode->freq = 1;
+    newNode->prev = cur;
+    newNode->next = cur->next;
+    cur->next = newNode;
+    return;
+}
+
+void swap(struct node *a, struct node *b)
+{
+    char *aWord = a->word;
+    int aFreq = a->freq;
+    a->freq = b->freq;
+    a->word = b->word;
+    b->freq = aFreq;
+    b->word = aWord;
+}
+
+void sort(struct node *head)
+{
+    struct node *cur = NULL;
+    struct node *idx = NULL;
+
+    for (cur = head->next; cur->next; cur = cur->next)
+    {
+        for (idx = cur->next; idx; idx = idx->next)
+        {
+            if (cur->freq < idx->freq)
+            {
+                swap(cur, idx);
+            }
+            else if (cur->freq == idx->freq && strcmp(cur->word, idx->word) > 0)
+            {
+                swap(cur, idx);
+            }
+        }
+    }
+}
+
 char **topKFrequent(char **words, int wordsSize, int k, int *returnSize)
 {
-    char **res;
     if (wordsSize < 1)
     {
-        return res;
+        return NULL;
     }
 
+    // Dummy head
     struct node *head = (struct node *)malloc(sizeof(struct node));
-    head->word = words[0];
-    head->freq = 1;
+    head->word = "";
+    head->freq = INT_MAX;
     head->next = NULL;
     head->prev = NULL;
-
-    struct node *cur = head;
-
-    // Doubly linked list as a bad hash map
-    for (int i = 1; i < wordsSize; i++)
+    for (int i = 0; i < wordsSize; i++)
     {
-        while (cur->next && strcmp(cur->word, words[i]) < 0)
-        {
-            cur = cur->next;
-        }
+        insert(head, words[i]);
+    }
+    struct node *cur = head->next;
+    sort(head);
 
-        while (cur->prev && strcmp(cur->word, words[i]) > 0)
-        {
-            cur = cur->prev;
-        }
+    char **res = (char **)malloc(sizeof(char *) * k);
+    cur = head->next;
 
-        if (strcmp(cur->word, words[i]) == 0)
-        {
-            cur->freq++;
-            continue;
-        }
-
-        struct node *newNode = (struct node *)malloc(sizeof(struct node));
-        newNode->freq = 1;
-
-        // Inserting head
-        if (!cur->prev && strcmp(cur->word, words[i]) < 0)
-        {
-            newNode->next = head;
-            head->prev = newNode;
-            head = newNode;
-            continue;
-        }
-
-        newNode->next = cur->next;
-        newNode->prev = cur;
-        cur->next = newNode;
+    cur = head->next;
+    for (int i = 0; i < k; i++)
+    {
+        int len = strlen(cur->word);
+        res[i] = (char *)malloc((len + 1) * sizeof(char));
+        strcpy(res[i], cur->word);
+        cur = cur->next;
     }
 
-    // Bubble sort the list;
-    struct node *cur = head;
-
-    while (cur->next)
-    {
-        struct node *curJ = cur;
-
-        while (curJ->next)
-        {
-            if (cur->freq > cur->next->freq)
-            {
-                cur = cur->next;
-                continue;
-            }
-
-            // Swap cur with next;
-        }
-    }
+    *returnSize = k;
+    return res;
 }
 
 /*
