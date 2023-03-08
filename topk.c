@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <limits.h>
-
-struct node
-{
-    char *word;
-    int freq;
-    struct node *next;
-    struct node *prev;
-};
+#include "topk.h"
 
 // Insert with dummy head
 void insert(struct node *head, char *word)
@@ -106,45 +97,3 @@ char **topKFrequent(char **words, int wordsSize, int k, int *returnSize)
     *returnSize = k;
     return res;
 }
-
-/*
-bool comp(pair<string, int>& a, pair<string, int>& b) {
-        if (a.second == b.second) {
-            return a.first < b.first;
-        }
-
-        return a.second > b.second;
-    }
-
-class Solution {
-public:
-
-    vector<string> topKFrequent(vector<string>& words, int k) {
-        map<string, int> freq;
-
-        for (string s : words) {
-            if (freq.count(s) == 0) {
-                freq[s] = 1;
-                continue;
-            }
-
-            freq[s]++;
-        }
-
-        vector<pair<string, int>> tmp;
-
-        for (auto &i : freq) {
-            tmp.push_back(i);
-        }
-        sort(tmp.begin(), tmp.end(), comp);
-
-        vector<string> res;
-
-        for (int i = 0; i < k; i++) {
-            res.push_back(tmp[i].first);
-        }
-
-        return res;
-    }
-};
-*/
