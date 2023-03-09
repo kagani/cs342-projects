@@ -57,18 +57,27 @@ int main(int argc, char *argv[])
         char *line = NULL;
         int len = 0;
         int read;
-        int i = 0;
+        int count = 0;
         while ((read = getline(&line, &len, ptr)) != -1)
         {
-            char *token = strtok(line, "\n ");
-            while (token != NULL)
-            {
-                int len = strlen(token);
-                char *str = (char *)malloc(sizeof(char) * (len + 1));
-                strcpy(str, token);
-                insert(head, str, len);
-                i++;
-                token = strtok(NULL, "\n ");
+            int l = 0;
+            int r = 0;
+            while (line[r] != '\n') {
+                if (line[r] == '\0') {
+                    int len = r - l;
+                    char *str = (char *)malloc(sizeof(char) * (len + 1));
+
+                    for (int i = 0; i <= len; i++) {
+                        str[i] = line[l++];
+                    }
+
+                    insert(head, str, len);
+                    count++;
+                }
+                
+                r++;
+                while (line[l] == ' ' || line[l] == '\t') l++;
+                while (line[r] == ' ' || line[r] == '\t') r++;
             }
         }
 
