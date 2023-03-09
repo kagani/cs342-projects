@@ -3,5 +3,5 @@
 #include "list.h"
 #include <string.h>
 #include <stdlib.h>
-
-char **topKFrequent(node *words, int k, int *returnSize);
+#include "pair.h"
+pair *topKFrequent(node *words, int k, int *returnSize);
