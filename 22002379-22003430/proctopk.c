@@ -5,11 +5,18 @@
 #include <unistd.h>
 #include <limits.h>
 #include "topk.h"
+#include <sys/mman.h>
 
 /*
  * Usage: proctopk <K> <outfile> <N> <infile1> .... <infileN>
  * N child processes will be created to process N input files.
  */
+
+void* create_shared_memory(size_t size) {
+  int protection = PROT_READ | PROT_WRITE;
+  int visibility = MAP_SHARED | MAP_ANONYMOUS;
+  return mmap(NULL, size, protection, visibility, -1, 0);
+}
 
 int main(int argc, char *argv[])
 {
@@ -19,7 +26,12 @@ int main(int argc, char *argv[])
     int K = atoi(argv[1]);
     char *outfile = argv[2];
     int N = atoi(argv[3]);
+
+    // The names of input files stored in a global variable
     char *files[N];
+
+    // The name of the shared memory stored in a global variable
+    void* SHARED_MEM = create_shared_memory(4096);
 
     for (int i = 0; i < N; i++)
     {
@@ -74,6 +86,7 @@ int main(int argc, char *argv[])
 
         int size = 0;
         char **res = topKFrequent(head, K, &size);
+        memcpy(SHARED_MEM, res, sizeof(res));
 
         printf("\nTop %d words:\n", size);
         for (int i = 0; i < size; i++)
