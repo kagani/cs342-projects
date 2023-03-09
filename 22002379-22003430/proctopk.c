@@ -60,34 +60,36 @@ int main(int argc, char *argv[])
         int read;
         int count = 0;
         read = getline(&line, &len, ptr);
-        printf("Line: %s\n", line);
         while (read != -1)
         {
             int l = 0;
             int r = 0;
-            printf("here\n");
+            printf("len: %d\n", read);
+            while (r <= read) {
+                if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0') {
+                    int strLen = r - l;
+                    printf("l: %d r: %d\n", l, r);
+                    char *str = (char *)malloc(sizeof(char) * (strLen + 1));
 
-            for (int i = 0; i < len; i++) {
-                printf("%d ", line[i]);
-            }
-            while (line[r] != '\n') {
-                if (line[r] == '\0') {
-                    int len = r - l;
-                    char *str = (char *)malloc(sizeof(char) * (len + 1));
-
-                    for (int i = 0; i < len; i++) {
+                    for (int i = 0; i < strLen; i++) {
                         str[i] = line[l++];
+
+                        if ('a' <= str[i] && str[i] <= 'z') str[i] -= 32;
                     }
 
-                    insert(head, str, len);
+                    str[strLen] = '\0';
+
+                    printf("%s\n", str);
+
+                    insert(head, str, strLen);
                     count++;
+                    l = r;
+                    while (line[l] == ' ' || line[l] == '\t') l++;
                 }
                 
                 r++;
-                while (line[l] == ' ' || line[l] == '\t') l++;
-                while (line[r] == ' ' || line[r] == '\t') r++;
             }
-
+            
             read = getline(&line, &len, ptr);
         }
 
