@@ -43,13 +43,14 @@ int main(int argc, char *argv[])
     if (rc == 0)
     {
         FILE *ptr;
+
         ptr = fopen(files[i], "r");
         if (!ptr)
         {
             printf("[-] File does not exist.\n");
             return -1;
         }
-
+    
         node *head = (node *)malloc(sizeof(node)); // Dummy head
         head->freq = INT_MAX;
         head->word = "";
@@ -58,27 +59,34 @@ int main(int argc, char *argv[])
         int len = 0;
         int read;
         int count = 0;
-        while ((read = getline(&line, &len, ptr)) != -1)
+        read = getline(&line, &len, ptr);
+        while (read != -1)
         {
             int l = 0;
             int r = 0;
-            while (line[r] != '\n') {
-                if (line[r] == '\0') {
-                    int len = r - l;
-                    char *str = (char *)malloc(sizeof(char) * (len + 1));
+            while (r <= read) {
+                if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0') {
+                    int strLen = r - l;
+                    char *str = (char *)malloc(sizeof(char) * (strLen + 1));
 
-                    for (int i = 0; i <= len; i++) {
+                    for (int i = 0; i < strLen; i++) {
                         str[i] = line[l++];
+
+                        if ('a' <= str[i] && str[i] <= 'z') str[i] -= 32;
                     }
 
-                    insert(head, str, len);
+                    str[strLen] = '\0';
+
+                    insert(head, str, strLen);
                     count++;
+                    l = r;
+                    while (line[l] == ' ' || line[l] == '\t') l++;
                 }
                 
                 r++;
-                while (line[l] == ' ' || line[l] == '\t') l++;
-                while (line[r] == ' ' || line[r] == '\t') r++;
             }
+            
+            read = getline(&line, &len, ptr);
         }
 
         int size = 0;
@@ -91,6 +99,10 @@ int main(int argc, char *argv[])
         }
         fclose(ptr);
         return 0;
+    }
+
+    for (int i = 0; i < N; i++) {
+        wait(processes[i]);
     }
 
     return 0;
