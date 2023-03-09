@@ -43,13 +43,14 @@ int main(int argc, char *argv[])
     if (rc == 0)
     {
         FILE *ptr;
+
         ptr = fopen(files[i], "r");
         if (!ptr)
         {
             printf("[-] File does not exist.\n");
             return -1;
         }
-
+    
         node *head = (node *)malloc(sizeof(node)); // Dummy head
         head->freq = INT_MAX;
         head->word = "";
@@ -58,16 +59,23 @@ int main(int argc, char *argv[])
         int len = 0;
         int read;
         int count = 0;
-        while ((read = getline(&line, &len, ptr)) != -1)
+        read = getline(&line, &len, ptr);
+        printf("Line: %s\n", line);
+        while (read != -1)
         {
             int l = 0;
             int r = 0;
+            printf("here\n");
+
+            for (int i = 0; i < len; i++) {
+                printf("%d ", line[i]);
+            }
             while (line[r] != '\n') {
                 if (line[r] == '\0') {
                     int len = r - l;
                     char *str = (char *)malloc(sizeof(char) * (len + 1));
 
-                    for (int i = 0; i <= len; i++) {
+                    for (int i = 0; i < len; i++) {
                         str[i] = line[l++];
                     }
 
@@ -79,6 +87,8 @@ int main(int argc, char *argv[])
                 while (line[l] == ' ' || line[l] == '\t') l++;
                 while (line[r] == ' ' || line[r] == '\t') r++;
             }
+
+            read = getline(&line, &len, ptr);
         }
 
         int size = 0;
@@ -92,6 +102,8 @@ int main(int argc, char *argv[])
         fclose(ptr);
         return 0;
     }
+
+    wait(rc);
 
     return 0;
 }
