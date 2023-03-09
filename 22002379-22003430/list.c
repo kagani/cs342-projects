@@ -1,7 +1,7 @@
 #include "list.h"
 
 // Insert with dummy head
-void insert(node *head, char *word)
+void insert(node *head, char *word, int len)
 {
     node *cur = head;
     while (cur->next && strcmp(cur->next->word, word) != 0)
@@ -25,6 +25,7 @@ void insert(node *head, char *word)
     node *newNode = (node *)malloc(sizeof(node));
     newNode->word = word;
     newNode->freq = 1;
+    newNode->len = len;
     newNode->prev = cur;
     newNode->next = cur->next;
     cur->next = newNode;
