@@ -19,51 +19,70 @@ int main(int argc, char *argv[])
     int K = atoi(argv[1]);
     char *outfile = argv[2];
     int N = atoi(argv[3]);
-    char files[N][64];
+    char *files[N];
 
     for (int i = 0; i < N; i++)
     {
+        int len = strlen(argv[i + 4]);
+        files[i] = (char *)malloc((len + 1) * sizeof(char));
         strcpy(files[i], argv[i + 4]);
     }
 
-    FILE *ptr;
-    ptr = fopen(files[0], "r");
-    if (NULL == ptr)
+    int processes[N];
+    int rc = -1;
+    int i;
+    for (i = 0; i < N; i++)
     {
-        printf("[-] File does not exist. \n");
-        return -1;
+        rc = fork();
+
+        if (rc == 0)
+            break;
+        processes[i] = rc;
     }
 
-    node *head = (node *)malloc(sizeof(node)); // Dummy head
-    head->freq = INT_MAX;
-    head->word = "";
-
-    char *line = NULL;
-    int len = 0;
-    int read;
-    int i = 0;
-    while ((read = getline(&line, &len, ptr)) != -1)
+    if (rc == 0)
     {
-        char *token = strtok(line, "\n ");
-        while (token != NULL)
+        FILE *ptr;
+        ptr = fopen(files[i], "r");
+        if (!ptr)
         {
-            int len = strlen(token);
-            char *str = (char *)malloc(sizeof(char) * (len + 1));
-            strcpy(str, token);
-            insert(head, str);
-            i++;
-            token = strtok(NULL, "\n ");
+            printf("[-] File does not exist.\n");
+            return -1;
         }
+
+        node *head = (node *)malloc(sizeof(node)); // Dummy head
+        head->freq = INT_MAX;
+        head->word = "";
+
+        char *line = NULL;
+        int len = 0;
+        int read;
+        int i = 0;
+        while ((read = getline(&line, &len, ptr)) != -1)
+        {
+            char *token = strtok(line, "\n ");
+            while (token != NULL)
+            {
+                int len = strlen(token);
+                char *str = (char *)malloc(sizeof(char) * (len + 1));
+                strcpy(str, token);
+                insert(head, str, len);
+                i++;
+                token = strtok(NULL, "\n ");
+            }
+        }
+
+        int size = 0;
+        char **res = topKFrequent(head, K, &size);
+
+        printf("\nTop %d words:\n", size);
+        for (int i = 0; i < size; i++)
+        {
+            printf("%s\n", res[i]);
+        }
+        fclose(ptr);
+        return 0;
     }
 
-    int size = 0;
-    char **res = topKFrequent(head, K, &size);
-
-    printf("Top %d words:\n", size);
-    for (int i = 0; i < size; i++)
-    {
-        printf("%s\n", res[i]);
-    }
-    fclose(ptr);
     return 0;
 }
