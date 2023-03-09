@@ -64,11 +64,9 @@ int main(int argc, char *argv[])
         {
             int l = 0;
             int r = 0;
-            printf("len: %d\n", read);
             while (r <= read) {
                 if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0') {
                     int strLen = r - l;
-                    printf("l: %d r: %d\n", l, r);
                     char *str = (char *)malloc(sizeof(char) * (strLen + 1));
 
                     for (int i = 0; i < strLen; i++) {
@@ -78,8 +76,6 @@ int main(int argc, char *argv[])
                     }
 
                     str[strLen] = '\0';
-
-                    printf("%s\n", str);
 
                     insert(head, str, strLen);
                     count++;
@@ -105,7 +101,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    wait(rc);
+    for (int i = 0; i < N; i++) {
+        wait(processes[i]);
+    }
 
     return 0;
 }
