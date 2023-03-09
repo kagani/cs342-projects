@@ -1,6 +1,6 @@
 #include "topk.h"
 
-char **topKFrequent(node *words, int k, int *returnSize)
+pair *topKFrequent(node *words, int k, int *returnSize)
 {
     if (!words)
     {
@@ -9,15 +9,16 @@ char **topKFrequent(node *words, int k, int *returnSize)
 
     sort(words);
 
-    char **res = (char **)malloc(sizeof(char *) * k);
+    pair *res = (pair*)malloc(sizeof(pair*) * k);
     node *cur = words->next;
 
     cur = words->next;
     int i = 0;
     for (; i < k && cur; i++)
     {
-        res[i] = (char *)malloc((cur->len + 1) * sizeof(char));
-        res[i] = cur->word;
+        res[i].first = (char *)malloc((cur->len + 1) * sizeof(char));
+        res[i].first = cur->word;
+        res[i].second = cur->freq;
         cur = cur->next;
     }
 

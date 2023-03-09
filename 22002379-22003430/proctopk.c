@@ -102,13 +102,12 @@ int main(int argc, char *argv[])
         }
 
         int size = 0;
-        char **res = topKFrequent(head, K, &size);
-        memcpy(mptr, "res[0]", sizeof(64));
+        pair *res = topKFrequent(head, K, &size);
 
         printf("\nTop %d words:\n", size);
         for (int i = 0; i < size; i++)
         {
-            printf("%s\n", res[i]);
+            printf("%s %d\n", res[i].first, res[i].second);
         }
         fclose(ptr);
         return 0;
