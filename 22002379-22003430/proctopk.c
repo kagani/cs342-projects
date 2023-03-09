@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     char *files[N];
 
     // The name of the shared memory stored in a global variable
-    void* SHARED_MEM = create_shared_memory(4096);
+    void* mptr = create_shared_memory(4096);
 
     for (int i = 0; i < N; i++)
     {
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
         int size = 0;
         char **res = topKFrequent(head, K, &size);
-        memcpy(SHARED_MEM, res, sizeof(res));
+        memcpy(mptr, "res[0]", sizeof(64));
 
         printf("\nTop %d words:\n", size);
         for (int i = 0; i < size; i++)
@@ -113,6 +113,8 @@ int main(int argc, char *argv[])
         fclose(ptr);
         return 0;
     }
+
+    printf("RESULT: %s", (mptr));
 
     for (int i = 0; i < N; i++) {
         wait(processes[i]);
