@@ -9,6 +9,8 @@ pair *topKFrequent(node *words, int k, int *returnSize)
 
     sort(words);
 
+    
+
     pair *res = (pair*)malloc(sizeof(pair*) * k);
     node *cur = words->next;
 
@@ -20,6 +22,10 @@ pair *topKFrequent(node *words, int k, int *returnSize)
         res[i].first = cur->word;
         res[i].second = cur->freq;
         cur = cur->next;
+    }
+
+    for (int j = 0; j < i; j++) {
+        printf("%s : %d\n", res[j].first, res[j].second);
     }
 
     *returnSize = i;
