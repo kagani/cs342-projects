@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
                     str[strLen] = '\0';
 
-                    insert(head, str, strLen);
+                    insert(head, str, strLen, 1);
                     count++;
                     l = r;
                     while (line[l] == ' ' || line[l] == '\t') l++;
