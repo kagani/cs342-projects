@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "topk.h"
 #include <sys/mman.h>
+#include <sys/time.h>
 
 #define MAX_STR 64
 
@@ -22,7 +23,8 @@ void* create_shared_memory(size_t size) {
 
 int main(int argc, char *argv[])
 {
-
+    struct timeval tv;
+    gettimeofday(&tv, 0);
     // Add argument check here
 
     int K = atoi(argv[1]);
@@ -168,6 +170,12 @@ int main(int argc, char *argv[])
         fprintf(fptr,"%s %d\n", res[i].first, res[i].second);
         printf("%s %d\n", res[i].first, res[i].second);
     }
+
+    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
+    gettimeofday(&tv, 0);
+    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
+
+    printf("Time to insert: %ldμs\n", end - start);
 
     return 0;
 }
