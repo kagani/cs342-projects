@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "topk.h"
 #include <pthread.h>
+#include <sys/time.h>
 
 /*
  * Usage: threadtopk <K> <outfile> <N> <infile1> .... <infileN>
@@ -55,8 +56,6 @@ void *worker(int *arg) {
 
                 str[strLen] = '\0';
 
-                printf("Inserting %s len: %d\n", str, strLen);
-
                 insert(head, str, strLen, 1);
                 count++;
                 l = r;
@@ -83,6 +82,8 @@ int main(int argc, char *argv[])
 {
 
     // Add argument check here
+    struct timeval tv;
+    gettimeofday(&tv, 0);
 
     int K = atoi(argv[1]);
     char *outfile = argv[2];
@@ -115,6 +116,7 @@ int main(int argc, char *argv[])
 
     // Process top k again
     node *head = (node *)malloc(sizeof(node)); // Dummy head
+    head->word = "";
     head->freq = INT_MAX;
 
     for (int i = 0; i < N; i++) {
@@ -125,6 +127,21 @@ int main(int argc, char *argv[])
 
     int size = 0;
     pair *res = topKFrequent(head, K, &size);
+
+    FILE *fptr;
+    fptr = fopen(outfile,"w");
+    printf("\nTop %d words:\n", size);
+    for (int i = 0; i < size; i++)
+    {
+        fprintf(fptr,"%s %d\n", res[i].first, res[i].second);
+        printf("%s %d\n", res[i].first, res[i].second);
+    }
+
+    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
+    gettimeofday(&tv, 0);
+    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
+
+    printf("Time to insert: %ldμs\n", end - start);
 
     return 0;
 }

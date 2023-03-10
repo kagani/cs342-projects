@@ -24,10 +24,6 @@ pair *topKFrequent(node *words, int k, int *returnSize)
         cur = cur->next;
     }
 
-    for (int j = 0; j < i; j++) {
-        printf("%s : %d\n", res[j].first, res[j].second);
-    }
-
     *returnSize = i;
     return res;
 }
