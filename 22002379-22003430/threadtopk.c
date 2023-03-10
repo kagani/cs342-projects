@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "topk.h"
 #include <pthread.h>
+#include <sys/time.h>
 
 /*
  * Usage: threadtopk <K> <outfile> <N> <infile1> .... <infileN>
@@ -81,6 +82,8 @@ int main(int argc, char *argv[])
 {
 
     // Add argument check here
+    struct timeval tv;
+    gettimeofday(&tv, 0);
 
     int K = atoi(argv[1]);
     char *outfile = argv[2];
@@ -133,6 +136,12 @@ int main(int argc, char *argv[])
         fprintf(fptr,"%s %d\n", res[i].first, res[i].second);
         printf("%s %d\n", res[i].first, res[i].second);
     }
+
+    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
+    gettimeofday(&tv, 0);
+    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
+
+    printf("Time to insert: %ldμs\n", end - start);
 
     return 0;
 }
