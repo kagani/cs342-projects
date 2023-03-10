@@ -138,9 +138,29 @@ int main(int argc, char *argv[])
 
     void* curmem = mptr + sizeof(int) + 1;
     size_t sz = MAX_STR*sizeof(char);
+
+    node *head = (node *)malloc(sizeof(node)); // Dummy head
+    head->freq = INT_MAX;
+    head->word = "";
+
     for(int i = 0; i < N*K; i++) {
-        printf("%d) %s : %d\n", i, curmem, *((int*)(curmem+64)));
+        char* word = curmem;
+        int freq = *((int*)(curmem+64));
+
+        node* cur = (node*)malloc(sizeof(node));
+
+        insert(head, word, freq);
+
+        printf("%d) %s : %d\n", i, word, freq);
         curmem += sz+sizeof(int);
+    }
+    
+    int size = 0;
+    pair *res = topKFrequent(head, K, &size);
+    printf("\nTop %d words:\n", size);
+    for (int i = 0; i < size; i++)
+    {
+        printf("%s %d\n", res[i].first, res[i].second);
     }
 
     return 0;
