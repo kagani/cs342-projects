@@ -7,6 +7,8 @@
 #include "topk.h"
 #include <sys/mman.h>
 
+#define MAX_STR 64
+
 /*
  * Usage: proctopk <K> <outfile> <N> <infile1> .... <infileN>
  * N child processes will be created to process N input files.
@@ -31,9 +33,9 @@ int main(int argc, char *argv[])
     char *files[N];
 
     // The name of the shared memory stored in a global variable
-    void* mptr = create_shared_memory(K * N * sizeof(pair) * (sizeof(char) * 64) + (N * sizeof(int)));
-    int index = mptr;
-    *mptr = index;
+    void* mptr = create_shared_memory(K * N * (MAX_STR*sizeof(char)+sizeof(int)) * (sizeof(char) * 64) + (N * sizeof(int)));
+    int index = 0;
+    memcpy(mptr, &index, sizeof(int));
 
     for (int i = 0; i < N; i++)
     {
@@ -104,10 +106,19 @@ int main(int argc, char *argv[])
         }
 
         int size = 0;
-        
+        size_t szt = 64;
         pair *res = topKFrequent(head, K, &size);
-        printf("index: %d", mptr);
-        //memcpy(mptr, res->first, sizeof(res->first));
+        void* cur = mptr + sizeof(int) + *((int*)mptr) + 1;
+        for(int i = 0; i < size; i++) {
+            
+            memcpy(cur, res[i].first, szt);
+            *((int*)mptr) += szt;
+
+            memcpy(cur+(MAX_STR*sizeof(char)), &res[i].second, sizeof(int));
+            *((int*)mptr) += sizeof(int);
+
+            cur += MAX_STR*sizeof(char) + sizeof(int);
+        }
 
         printf("\nTop %d words:\n", size);
         for (int i = 0; i < size; i++)
@@ -118,8 +129,18 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+
     for (int i = 0; i < N; i++) {
         wait(processes[i]);
+    }
+
+    printf("\n=== FROM SHARED MEMORY ===\n\n");
+
+    void* curmem = mptr + sizeof(int) + 1;
+    size_t sz = MAX_STR*sizeof(char);
+    for(int i = 0; i < N*K; i++) {
+        printf("%d) %s : %d\n", i, curmem, *((int*)(curmem+64)));
+        curmem += sz+sizeof(int);
     }
 
     return 0;
