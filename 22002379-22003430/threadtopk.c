@@ -55,8 +55,6 @@ void *worker(int *arg) {
 
                 str[strLen] = '\0';
 
-                printf("Inserting %s len: %d\n", str, strLen);
-
                 insert(head, str, strLen, 1);
                 count++;
                 l = r;
@@ -115,6 +113,7 @@ int main(int argc, char *argv[])
 
     // Process top k again
     node *head = (node *)malloc(sizeof(node)); // Dummy head
+    head->word = "";
     head->freq = INT_MAX;
 
     for (int i = 0; i < N; i++) {
@@ -125,6 +124,15 @@ int main(int argc, char *argv[])
 
     int size = 0;
     pair *res = topKFrequent(head, K, &size);
+
+    FILE *fptr;
+    fptr = fopen(outfile,"w");
+    printf("\nTop %d words:\n", size);
+    for (int i = 0; i < size; i++)
+    {
+        fprintf(fptr,"%s %d\n", res[i].first, res[i].second);
+        printf("%s %d\n", res[i].first, res[i].second);
+    }
 
     return 0;
 }
