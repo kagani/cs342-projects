@@ -11,6 +11,6 @@ typedef struct node
     struct node *prev;
 } node;
 
-void insert(node *head, char *word, int len);
+void insert(node *head, char *word, int len, int freq);
 void swap(node *a, node *b);
 void sort(node *head);
