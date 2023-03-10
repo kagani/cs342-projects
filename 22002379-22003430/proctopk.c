@@ -93,10 +93,13 @@ int main(int argc, char *argv[])
 
                     str[strLen] = '\0';
 
+                    printf("Inserting %s len: %d\n", str, strLen);
+
                     insert(head, str, strLen, 1);
                     count++;
                     l = r;
                     while (line[l] == ' ' || line[l] == '\t' || line[l] == '\r' || line[l] == '\n') l++;
+                    while (line[r] == '\r' || line[r] == '\n') r++;
                 }
                 
                 r++;
