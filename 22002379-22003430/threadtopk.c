@@ -17,7 +17,6 @@ pair **results; // 2d array to gather results from multiple threads res[i] is th
 int *resultsSize; // Size of each result from each thread
 
 void *worker(int *arg) {
-    printf("worker start %d %d\n", arg[0], arg[1]);
     int workerIdx = arg[0];
     int K = arg[1];
     char* fileName = files[workerIdx];
@@ -71,12 +70,9 @@ void *worker(int *arg) {
     int size = 0;
     
     pair *res = topKFrequent(head, K, &size);
-    printf("Worker %d done\n", workerIdx);
     results[workerIdx] = res;
     resultsSize[workerIdx] = size;
-    printf("Worker %d s\n", workerIdx);
     fclose(ptr);
-    printf("Worker %d return\n", workerIdx);
     return 0;
 }
 
@@ -115,12 +111,23 @@ int main(int argc, char *argv[])
     }
 
     // Process top k again
+    node *head = (node *)malloc(sizeof(node)); // Dummy head
+    head->freq = INT_MAX;
+    head->word = "";
 
-    printf("\nTop %d words:\n", K);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < resultsSize[i]; j++) {
-            printf("%s %d\n", results[i][j].first, results[i][j].second);
+            insert(head, results[i][j].first, strlen(results[i][j].first), results[i][j].second);
         }
     }
+
+    int size = 0;
+    pair *res = topKFrequent(head, K, &size);
+
+    printf("\nTop %d words:\n", size);
+        for (int i = 0; i < size; i++)
+        {
+            printf("%s %d\n", res[i].first, res[i].second);
+        }
     return 0;
 }
