@@ -43,7 +43,7 @@ void *worker(int *arg) {
         int l = 0;
         int r = 0;
         while (r <= read) {
-            if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0') {
+            if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0' || line[r] == '\r' || line[r] == '\n') {
                 int strLen = r - l;
                 char *str = (char *)malloc(sizeof(char) * (strLen + 1));
 
@@ -58,7 +58,7 @@ void *worker(int *arg) {
                 insert(head, str, strLen, 1);
                 count++;
                 l = r;
-                while (line[l] == ' ' || line[l] == '\t') l++;
+                while (line[l] == ' ' || line[l] == '\t' || line[l] == '\r' || line[l] == '\n') l++;
             }
             
             r++;
@@ -128,6 +128,10 @@ int main(int argc, char *argv[])
         for (int i = 0; i < size; i++)
         {
             printf("%s %d\n", res[i].first, res[i].second);
+            for (int j = 0; j < strlen(res[i].first); j++) {
+                printf("%d ", res[i].first[j]);
+            }
+            printf("\n");
         }
     return 0;
 }
