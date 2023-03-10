@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
                     str[strLen] = '\0';
 
-                    insert(head, str, strLen);
+                    insert(head, str, strLen, 1);
                     count++;
                     l = r;
                     while (line[l] == ' ' || line[l] == '\t') l++;
@@ -149,17 +149,20 @@ int main(int argc, char *argv[])
 
         node* cur = (node*)malloc(sizeof(node));
 
-        insert(head, word, freq);
+        insert(head, word, strlen(word) ,freq);
 
         printf("%d) %s : %d\n", i, word, freq);
         curmem += sz+sizeof(int);
     }
-    
+
+    FILE *fptr;
+    fptr = fopen(outfile,"w");
     int size = 0;
     pair *res = topKFrequent(head, K, &size);
     printf("\nTop %d words:\n", size);
     for (int i = 0; i < size; i++)
     {
+        fprintf(fptr,"%s %d\n", res[i].first, res[i].second);
         printf("%s %d\n", res[i].first, res[i].second);
     }
 
