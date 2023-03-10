@@ -13,9 +13,11 @@
  */
 
 char **files; // file names global array files[i] is ith thread
-pair **res; // 2d array to gather results from multiple threads res[i] is the res of ith thread
+pair **results; // 2d array to gather results from multiple threads res[i] is the res of ith thread
+int *resultsSize; // Size of each result from each thread
 
-void *worker(void *arg) {
+void *worker(int *arg) {
+    printf("worker start %d %d\n", arg[0], arg[1]);
     int workerIdx = arg[0];
     int K = arg[1];
     char* fileName = files[workerIdx];
@@ -54,7 +56,7 @@ void *worker(void *arg) {
 
                 str[strLen] = '\0';
 
-                insert(head, str, strLen);
+                insert(head, str, strLen, 1);
                 count++;
                 l = r;
                 while (line[l] == ' ' || line[l] == '\t') l++;
@@ -69,13 +71,12 @@ void *worker(void *arg) {
     int size = 0;
     
     pair *res = topKFrequent(head, K, &size);
-
-    printf("\nTop %d words:\n", size);
-    for (int i = 0; i < size; i++)
-    {
-        printf("%s %d\n", res[i].first, res[i].second);
-    }
+    printf("Worker %d done\n", workerIdx);
+    results[workerIdx] = res;
+    resultsSize[workerIdx] = size;
+    printf("Worker %d s\n", workerIdx);
     fclose(ptr);
+    printf("Worker %d return\n", workerIdx);
     return 0;
 }
 
@@ -88,7 +89,9 @@ int main(int argc, char *argv[])
     char *outfile = argv[2];
     int N = atoi(argv[3]);
 
-    files = (char *) malloc(sizeof(char*) * N);
+    files = (char **) malloc(sizeof(char*) * N);
+    results = (pair**) malloc(sizeof(pair*) * N);
+    resultsSize = (int *) malloc(sizeof(int) * N);
 
     for (int i = 0; i < N; i++)
     {
@@ -101,13 +104,23 @@ int main(int argc, char *argv[])
     int i;
     for (i = 0; i < N; i++)
     {
-        void *arg = {i, K};
-        pthread_create(&threads[i], NULL, worker, arg);
+        int *args = (int*) malloc(sizeof(int) * 2);
+        args[0] = i;
+        args[1] = K;
+        pthread_create(&threads[i], NULL, worker, args);
     }
 
     for (int i = 0; i < N; i++) {
         pthread_join(threads[i], NULL);
     }
 
+    // Process top k again
+
+    printf("\nTop %d words:\n", K);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < resultsSize[i]; j++) {
+            printf("%s %d\n", results[i][j].first, results[i][j].second);
+        }
+    }
     return 0;
 }
