@@ -7,11 +7,25 @@
 #include "topk.h"
 #include <pthread.h>
 #include <sys/time.h>
+#include<ctype.h>
+
 
 /*
  * Usage: threadtopk <K> <outfile> <N> <infile1> .... <infileN>
  * N threads will be created to process N input files.
  */
+
+char* uppercase(char* str) {
+    char* temp = (char*)malloc(strlen(str)*sizeof(char));
+    strcpy(temp, str);
+    char cur;
+    int i = 0;
+    while(str[i]) {
+        temp[i] = toupper(temp[i]);
+        i++;
+    }
+    return temp;
+}
 
 char **files; // file names global array files[i] is ith thread
 pair **results; // 2d array to gather results from multiple threads res[i] is the res of ith thread
@@ -30,43 +44,34 @@ void *worker(int *arg) {
         return (int*)-1;
     }
 
-    node *head = (node *)malloc(sizeof(node)); // Dummy head
-    head->freq = INT_MAX;
-    head->word = "";
-
     char *line = NULL;
     int len = 0;
     int read;
     int count = 0;
     read = getline(&line, (size_t*)&len, ptr);
-    while (read != -1)
+    
+    long lgth;
+    char *text;
+    char *tkn;
+    const char exceptions[] = " \t\r\n\v\f";
+    if (!ptr)
     {
-        int l = 0;
-        int r = 0;
-        while (r <= read) {
-            if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0' || line[r] == '\r' || line[r] == '\n') {
-                int strLen = r - l;
-                char *str = (char *)malloc(sizeof(char) * (strLen + 1));
-
-                for (int i = 0; i < strLen; i++) {
-                    str[i] = line[l++];
-
-                    if ('a' <= str[i] && str[i] <= 'z') str[i] -= 32;
-                }
-
-                str[strLen] = '\0';
-
-                insert(head, str, strLen, 1);
-                count++;
-                l = r;
-                while (line[l] == ' ' || line[l] == '\t' || line[l] == '\r' || line[l] == '\n') l++;
-                while (line[r] == '\r' || line[r] == '\n') r++;
-            }
-            
-            r++;
-        }
-        
-        read = getline(&line, (size_t*)&len, ptr);
+        printf("[-] File does not exist.\n");
+    }
+    fseek(ptr, 0, SEEK_END);
+    node *head = (node *)malloc(sizeof(node)); // Dummy head
+    head->freq = INT_MAX;
+    head->word = "";
+    lgth = ftell(ptr);
+    fseek(ptr, 0, SEEK_SET);
+    text = (char *)malloc(lgth + 1);
+    fread(text, 1, lgth, ptr);
+    text[lgth] = '\0';
+    
+    tkn = strtok(text, exceptions);
+    while (tkn != NULL) {
+        insert(head, uppercase(tkn), strlen(tkn), 1);
+        tkn = strtok(NULL, exceptions);
     }
 
     int size = 0;

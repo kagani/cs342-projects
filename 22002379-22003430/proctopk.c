@@ -17,7 +17,9 @@
 /*
  * Usage: proctopk <K> <outfile> <N> <infile1> .... <infileN>
  * N child processes will be created to process N input files.
- */
+*/
+
+// Helper Functions
 
 void* shmem_alloc(size_t size, int shm_fd) {
     ftruncate(shm_fd, size);
@@ -35,13 +37,14 @@ char* uppercase(char* str) {
     strcpy(temp, str);
     char cur;
     int i = 0;
-    while(temp[i]) {
-        cur = temp[i];
-        putchar(toupper(cur));
+    while(str[i]) {
+        temp[i] = toupper(temp[i]);
         i++;
     }
     return temp;
 }
+
+// Main 
 
 int main(int argc, char *argv[])
 {
@@ -88,36 +91,31 @@ int main(int argc, char *argv[])
     if (rc == 0)
     {
         FILE *ptr;
-        long length;
-        char *data;
-        char *token;
-        const char delimiters[] = " \t\r\n\v\f";
+        long lgth;
+        char *text;
+        char *tkn;
+        const char exceptions[] = " \t\r\n\v\f";
         ptr = fopen(files[i], "r");
         if (!ptr)
         {
             printf("[-] File does not exist.\n");
             return -1;
         }
-
+        fseek(ptr, 0, SEEK_END);
         node *head = (node *)malloc(sizeof(node)); // Dummy head
         head->freq = INT_MAX;
         head->word = "";
-
-        fseek(ptr, 0, SEEK_END);
-        length = ftell(ptr);
+        lgth = ftell(ptr);
         fseek(ptr, 0, SEEK_SET);
-
-        data = (char *)malloc(length + 1);
-
-        fread(data, 1, length, ptr);
-        data[length] = '\0';
-
+        text = (char *)malloc(lgth + 1);
+        fread(text, 1, lgth, ptr);
+        text[lgth] = '\0';
         fclose(ptr);
 
-        token = strtok(data, delimiters);
-        while (token != NULL) {
-            insert(head, token, strlen(token), 1);
-            token = strtok(NULL, delimiters);
+        tkn = strtok(text, exceptions);
+        while (tkn != NULL) {
+            insert(head, uppercase(tkn), strlen(tkn), 1);
+            tkn = strtok(NULL, exceptions);
         }
 
         int size = 0;
