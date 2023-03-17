@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include<sys/wait.h>
+#include<ctype.h>
 
 
 #define MAX_STR 64
@@ -27,6 +28,19 @@ void shmem_dealloc(void* shptr, int shm_fd, size_t size) {
     munmap(shptr, size);
     close(shm_fd);
     shm_unlink("/shm.dir");
+}
+
+char* uppercase(char* str) {
+    char* temp = (char*)malloc(strlen(str)*sizeof(char));
+    strcpy(temp, str);
+    char cur;
+    int i = 0;
+    while(temp[i]) {
+        cur = temp[i];
+        putchar(toupper(cur));
+        i++;
+    }
+    return temp;
 }
 
 int main(int argc, char *argv[])
@@ -74,55 +88,38 @@ int main(int argc, char *argv[])
     if (rc == 0)
     {
         FILE *ptr;
-
+        long length;
+        char *data;
+        char *token;
+        const char delimiters[] = " \t\r\n\v\f";
         ptr = fopen(files[i], "r");
         if (!ptr)
         {
             printf("[-] File does not exist.\n");
             return -1;
         }
-    
+
         node *head = (node *)malloc(sizeof(node)); // Dummy head
         head->freq = INT_MAX;
         head->word = "";
 
-        char *line = NULL;
-        int len = 0;
-        int read;
-        int count = 0;
-        read = getline(&line, ((size_t*)&len), ptr);
-        while (read != -1)
-        {
-            int l = 0;
-            int r = 0;
-            while (r <= read) {
-                if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0' || line[r] == '\r' || line[r] == '\n') {
-                    int strLen = r - l;
-                    char *str = (char *)malloc(sizeof(char) * (strLen + 1));
+        fseek(ptr, 0, SEEK_END);
+        length = ftell(ptr);
+        fseek(ptr, 0, SEEK_SET);
 
-                    for (int i = 0; i < strLen; i++) {
-                        str[i] = line[l++];
+        data = (char *)malloc(length + 1);
 
-                        if ('a' <= str[i] && str[i] <= 'z') str[i] -= 32;
-                    }
+        fread(data, 1, length, ptr);
+        data[length] = '\0';
 
-                    str[strLen] = '\0';
+        fclose(ptr);
 
-                    //printf("Inserting %s len: %d\n", str, strLen);
-
-                    insert(head, str, strLen, 1);
-                    count++;
-                    l = r;
-                    while (line[l] == ' ' || line[l] == '\t' || line[l] == '\r' || line[l] == '\n') l++;
-                    while (line[r] == '\r' || line[r] == '\n') r++;
-                }
-                
-                r++;
-            }
-            
-            read = getline(&line, (size_t*)&len, ptr);
+        token = strtok(data, delimiters);
+        while (token != NULL) {
+            insert(head, token, strlen(token), 1);
+            token = strtok(NULL, delimiters);
         }
-        
+
         int size = 0;
         size_t szt = 64;
         pair *res = topKFrequent(head, K, &size);
