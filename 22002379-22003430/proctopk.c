@@ -8,6 +8,8 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include<sys/wait.h>
+
 
 #define MAX_STR 64
 
@@ -57,8 +59,8 @@ int main(int argc, char *argv[])
         strcpy(files[i], argv[i + 4]);
     }
 
-    int processes[N];
-    int rc = -1;
+    int* processes[N];
+    intptr_t rc = -1;
     int i;
     for (i = 0; i < N; i++)
     {
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 
         if (rc == 0)
             break;
-        processes[i] = rc;
+        processes[i] = (int*) rc;
     }
 
     if (rc == 0)
@@ -88,7 +90,7 @@ int main(int argc, char *argv[])
         int len = 0;
         int read;
         int count = 0;
-        read = getline(&line, &len, ptr);
+        read = getline(&line, ((size_t*)&len), ptr);
         while (read != -1)
         {
             int l = 0;
@@ -118,7 +120,7 @@ int main(int argc, char *argv[])
                 r++;
             }
             
-            read = getline(&line, &len, ptr);
+            read = getline(&line, (size_t*)&len, ptr);
         }
         
         int size = 0;

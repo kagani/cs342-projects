@@ -27,7 +27,7 @@ void *worker(int *arg) {
     if (!ptr)
     {
         printf("[-] File does not exist.\n");
-        return -1;
+        return (int*)-1;
     }
 
     node *head = (node *)malloc(sizeof(node)); // Dummy head
@@ -38,7 +38,7 @@ void *worker(int *arg) {
     int len = 0;
     int read;
     int count = 0;
-    read = getline(&line, &len, ptr);
+    read = getline(&line, (size_t*)&len, ptr);
     while (read != -1)
     {
         int l = 0;
@@ -66,7 +66,7 @@ void *worker(int *arg) {
             r++;
         }
         
-        read = getline(&line, &len, ptr);
+        read = getline(&line, (size_t*)&len, ptr);
     }
 
     int size = 0;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         int *args = (int*) malloc(sizeof(int) * 2);
         args[0] = i;
         args[1] = K;
-        pthread_create(&threads[i], NULL, worker, args);
+        pthread_create(&threads[i], NULL, (void*) worker, args);
     }
 
     for (int i = 0; i < N; i++) {
