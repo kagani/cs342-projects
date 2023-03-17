@@ -7,6 +7,7 @@
 #include "topk.h"
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 #define MAX_STR 64
 
@@ -15,10 +16,15 @@
  * N child processes will be created to process N input files.
  */
 
-void* create_shared_memory(size_t size) {
-  int protection = PROT_READ | PROT_WRITE;
-  int visibility = MAP_SHARED | MAP_ANONYMOUS;
-  return mmap(NULL, size, protection, visibility, -1, 0);
+void* shmem_alloc(size_t size, int shm_fd) {
+    ftruncate(shm_fd, size);
+    return mmap(0, size, PROT_WRITE, MAP_SHARED, shm_fd, 0);
+}
+
+void shmem_dealloc(void* shptr, int shm_fd, size_t size) {
+    munmap(shptr, size);
+    close(shm_fd);
+    shm_unlink("/shm.dir");
 }
 
 int main(int argc, char *argv[])
@@ -35,7 +41,12 @@ int main(int argc, char *argv[])
     char *files[N];
 
     // The name of the shared memory stored in a global variable
-    void* mptr = create_shared_memory(K * N * (MAX_STR*sizeof(char)+sizeof(int)) * (sizeof(char) * 64) + (N * sizeof(int)));
+    int shm_fd = shm_open("/shm.dir", O_CREAT | O_RDWR, 0666);
+    if(!shm_fd) {
+        printf("[-] Error occured during shared memory creation.");
+    }
+    size_t shmem_size = K * N * (MAX_STR*sizeof(char)+sizeof(int)) * (sizeof(char) * 64) + (N * sizeof(int));
+    void* mptr = shmem_alloc(shmem_size, shm_fd);
     int index = 0;
     memcpy(mptr, &index, sizeof(int));
 
@@ -95,7 +106,7 @@ int main(int argc, char *argv[])
 
                     str[strLen] = '\0';
 
-                    printf("Inserting %s len: %d\n", str, strLen);
+                    //printf("Inserting %s len: %d\n", str, strLen);
 
                     insert(head, str, strLen, 1);
                     count++;
@@ -109,7 +120,7 @@ int main(int argc, char *argv[])
             
             read = getline(&line, &len, ptr);
         }
-
+        
         int size = 0;
         size_t szt = 64;
         pair *res = topKFrequent(head, K, &size);
@@ -124,7 +135,6 @@ int main(int argc, char *argv[])
 
             cur += MAX_STR*sizeof(char) + sizeof(int);
         }
-
         printf("\nTop %d words:\n", size);
         for (int i = 0; i < size; i++)
         {
@@ -175,7 +185,9 @@ int main(int argc, char *argv[])
     gettimeofday(&tv, 0);
     long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
 
-    printf("Time to insert: %ldμs\n", end - start);
+    printf("\n\nTime to complete: %ldμs\n", end - start);
+
+    shmem_dealloc(mptr, shm_fd, shmem_size);
 
     return 0;
 }
