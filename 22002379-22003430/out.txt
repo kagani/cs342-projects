@@ -1,3 +1,0 @@
-HELLO 112
-IS 58
-THE 24
