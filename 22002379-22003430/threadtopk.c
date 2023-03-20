@@ -7,11 +7,23 @@
 #include "topk.h"
 #include <pthread.h>
 #include <sys/time.h>
+#include <ctype.h>
 
 /*
  * Usage: threadtopk <K> <outfile> <N> <infile1> .... <infileN>
  * N threads will be created to process N input files.
  */
+
+void uppercase(char *str)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if (islower(str[i]))
+        {
+            str[i] = toupper(str[i]);
+        }
+    }
+}
 
 char **files;     // file names global array files[i] is ith thread
 pair **results;   // 2d array to gather results from multiple threads res[i] is the res of ith thread
@@ -28,52 +40,42 @@ void *worker(int *arg)
     if (!ptr)
     {
         printf("[-] File does not exist.\n");
-        return -1;
+        return (int *)-1;
     }
-
-    node *head = (node *)malloc(sizeof(node)); // Dummy head
-    head->freq = INT_MAX;
-    head->word = "";
 
     char *line = NULL;
     int len = 0;
     int read;
     int count = 0;
-    read = getline(&line, &len, ptr);
-    while (read != -1)
+    read = getline(&line, (size_t *)&len, ptr);
+
+    long lgth;
+    char *text;
+    char *tkn;
+    const char exceptions[] = " \t\r\n\v\f";
+    if (!ptr)
     {
-        int l = 0;
-        int r = 0;
-        while (r <= read)
-        {
-            if (l < r && line[r] == ' ' || line[r] == '\t' || line[r] == '\0' || line[r] == '\r' || line[r] == '\n')
-            {
-                int strLen = r - l;
-                char *str = (char *)malloc(sizeof(char) * (strLen + 1));
+        printf("[-] File does not exist.\n");
+    }
+    fseek(ptr, 0, SEEK_END);
+    node *head = (node *)malloc(sizeof(node)); // Dummy head
+    head->freq = INT_MAX;
+    head->word = "";
+    lgth = ftell(ptr);
+    fseek(ptr, 0, SEEK_SET);
+    text = (char *)malloc(lgth + 1);
+    fread(text, 1, lgth, ptr);
+    text[lgth] = '\0';
 
-                for (int i = 0; i < strLen; i++)
-                {
-                    str[i] = line[l++];
-
-                    if ('a' <= str[i] && str[i] <= 'z')
-                        str[i] -= 32;
-                }
-
-                str[strLen] = '\0';
-
-                insert(head, str, strLen, 1);
-                count++;
-                l = r;
-                while (line[l] == ' ' || line[l] == '\t' || line[l] == '\r' || line[l] == '\n')
-                    l++;
-                while (line[r] == '\r' || line[r] == '\n')
-                    r++;
-            }
-
-            r++;
-        }
-
-        read = getline(&line, &len, ptr);
+    tkn = strtok(text, exceptions);
+    while (tkn != NULL)
+    {
+        int len = strlen(tkn);
+        char *word = (char *)malloc(sizeof(char) * (len + 1));
+        strcpy(word, tkn);
+        uppercase(word);
+        insert(head, word, len, 1);
+        tkn = strtok(NULL, exceptions);
     }
 
     int size = 0;
@@ -114,7 +116,7 @@ int main(int argc, char *argv[])
         int *args = (int *)malloc(sizeof(int) * 2);
         args[0] = i;
         args[1] = K;
-        pthread_create(&threads[i], NULL, worker, args);
+        pthread_create(&threads[i], NULL, (void *)worker, args);
     }
 
     for (int i = 0; i < N; i++)
@@ -131,9 +133,6 @@ int main(int argc, char *argv[])
     {
         for (int j = 0; j < resultsSize[i]; j++)
         {
-            int len = strlen(results[i][j].first);
-            char *str = (char *)malloc(sizeof(char) * (len + 1));
-            strcpy(str, results[i][j].first);
             insert(head, results[i][j].first, strlen(results[i][j].first), results[i][j].second);
         }
     }
