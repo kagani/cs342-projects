@@ -8,43 +8,43 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <fcntl.h>
-#include<sys/wait.h>
-#include<ctype.h>
-
+#include <sys/wait.h>
+#include <ctype.h>
 
 #define MAX_STR 64
 
 /*
  * Usage: proctopk <K> <outfile> <N> <infile1> .... <infileN>
  * N child processes will be created to process N input files.
-*/
+ */
 
 // Helper Functions
 
-void* shmem_alloc(size_t size, int shm_fd) {
+void *shmem_alloc(size_t size, int shm_fd)
+{
     ftruncate(shm_fd, size);
     return mmap(0, size, PROT_WRITE, MAP_SHARED, shm_fd, 0);
 }
 
-void shmem_dealloc(void* shptr, int shm_fd, size_t size) {
+void shmem_dealloc(void *shptr, int shm_fd, size_t size)
+{
     munmap(shptr, size);
     close(shm_fd);
     shm_unlink("/shm.dir");
 }
 
-char* uppercase(char* str) {
-    char* temp = (char*)malloc(strlen(str)*sizeof(char));
-    strcpy(temp, str);
-    char cur;
-    int i = 0;
-    while(str[i]) {
-        temp[i] = toupper(temp[i]);
-        i++;
+void uppercase(char *str)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if (islower(str[i]))
+        {
+            str[i] = toupper(str[i]);
+        }
     }
-    return temp;
 }
 
-// Main 
+// Main
 
 int main(int argc, char *argv[])
 {
@@ -61,11 +61,12 @@ int main(int argc, char *argv[])
 
     // The name of the shared memory stored in a global variable
     int shm_fd = shm_open("/shm.dir", O_CREAT | O_RDWR, 0666);
-    if(!shm_fd) {
+    if (!shm_fd)
+    {
         printf("[-] Error occured during shared memory creation.");
     }
-    size_t shmem_size = K * N * (MAX_STR*sizeof(char)+sizeof(int)) * (sizeof(char) * 64) + (N * sizeof(int));
-    void* mptr = shmem_alloc(shmem_size, shm_fd);
+    size_t shmem_size = K * N * (MAX_STR * sizeof(char) + sizeof(int)) * (sizeof(char) * 64) + (N * sizeof(int));
+    void *mptr = shmem_alloc(shmem_size, shm_fd);
     int index = 0;
     memcpy(mptr, &index, sizeof(int));
 
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
         strcpy(files[i], argv[i + 4]);
     }
 
-    int* processes[N];
+    int *processes[N];
     intptr_t rc = -1;
     int i;
     for (i = 0; i < N; i++)
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
 
         if (rc == 0)
             break;
-        processes[i] = (int*) rc;
+        processes[i] = (int *)rc;
     }
 
     if (rc == 0)
@@ -113,24 +114,30 @@ int main(int argc, char *argv[])
         fclose(ptr);
 
         tkn = strtok(text, exceptions);
-        while (tkn != NULL) {
-            insert(head, uppercase(tkn), strlen(tkn), 1);
+        while (tkn != NULL)
+        {
+            int len = strlen(tkn);
+            char *word = (char *)malloc(sizeof(char) * (len + 1));
+            strcpy(word, tkn);
+            uppercase(word);
+            insert(head, word, len, 1);
             tkn = strtok(NULL, exceptions);
         }
 
         int size = 0;
         size_t szt = 64;
         pair *res = topKFrequent(head, K, &size);
-        void* cur = mptr + sizeof(int) + *((int*)mptr) + 1;
-        for(int i = 0; i < size; i++) {
-            
+        void *cur = mptr + sizeof(int) + *((int *)mptr) + 1;
+        for (int i = 0; i < size; i++)
+        {
+
             memcpy(cur, res[i].first, szt);
-            *((int*)mptr) += szt;
+            *((int *)mptr) += szt;
 
-            memcpy(cur+(MAX_STR*sizeof(char)), &res[i].second, sizeof(int));
-            *((int*)mptr) += sizeof(int);
+            memcpy(cur + (MAX_STR * sizeof(char)), &res[i].second, sizeof(int));
+            *((int *)mptr) += sizeof(int);
 
-            cur += MAX_STR*sizeof(char) + sizeof(int);
+            cur += MAX_STR * sizeof(char) + sizeof(int);
         }
         printf("\nTop %d words:\n", size);
         for (int i = 0; i < size; i++)
@@ -141,40 +148,41 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         wait(processes[i]);
     }
 
     printf("\n=== FROM SHARED MEMORY ===\n\n");
 
-    void* curmem = mptr + sizeof(int) + 1;
-    size_t sz = MAX_STR*sizeof(char);
+    void *curmem = mptr + sizeof(int) + 1;
+    size_t sz = MAX_STR * sizeof(char);
 
     node *head = (node *)malloc(sizeof(node)); // Dummy head
     head->freq = INT_MAX;
     head->word = "";
 
-    for(int i = 0; i < N*K; i++) {
-        char* word = curmem;
-        int freq = *((int*)(curmem+64));
+    for (int i = 0; i < N * K; i++)
+    {
+        char *word = curmem;
+        int freq = *((int *)(curmem + 64));
 
-        node* cur = (node*)malloc(sizeof(node));
+        node *cur = (node *)malloc(sizeof(node));
 
-        insert(head, word, strlen(word) ,freq);
+        insert(head, word, strlen(word), freq);
 
         printf("%d) %s : %d\n", i, word, freq);
-        curmem += sz+sizeof(int);
+        curmem += sz + sizeof(int);
     }
 
     FILE *fptr;
-    fptr = fopen(outfile,"w");
+    fptr = fopen(outfile, "w");
     int size = 0;
     pair *res = topKFrequent(head, K, &size);
     printf("\nTop %d words:\n", size);
     for (int i = 0; i < size; i++)
     {
-        fprintf(fptr,"%s %d\n", res[i].first, res[i].second);
+        fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
         printf("%s %d\n", res[i].first, res[i].second);
     }
 

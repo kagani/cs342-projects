@@ -1,7 +1,7 @@
 all: proctopk threadtopk
 proctopk:
-	gcc list.c topk.c proctopk.c -o proc_exec
+	gcc list.c topk.c proctopk.c -o proctopk
 threadtopk:
-	gcc list.c topk.c threadtopk.c -o thread_exec
+	gcc list.c topk.c threadtopk.c -o threadtopk
 clean:
-	rm -f proc_exec thread_exec out.txt
+	rm -f proctopk threadtopk out.txt
