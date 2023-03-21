@@ -112,7 +112,6 @@ int main(int argc, char *argv[])
         args[1] = K;
         pthread_create(&threads[i], NULL, (void *)worker, args);
         pthread_join(threads[i], NULL);
-        free(args);
     }
 
     // Process top k again
@@ -137,10 +136,5 @@ int main(int argc, char *argv[])
     {
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
     }
-
-    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
-    gettimeofday(&tv, 0);
-    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
-
     return 0;
 }
