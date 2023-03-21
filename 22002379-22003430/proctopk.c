@@ -47,8 +47,6 @@ void uppercase(char *str)
 // Main
 int main(int argc, char *argv[])
 {
-    struct timeval tv;
-    gettimeofday(&tv, 0);
     // Add argument check here
 
     int K = atoi(argv[1]);
@@ -172,11 +170,6 @@ int main(int argc, char *argv[])
     for (int i = 0; i < size; i++)
     {
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
-    }
-
-    for (int i = 0; i < N; i++)
-    {
-        free(files[i]);
     }
 
     shmem_dealloc(mptr, shm_fd, shmem_size);
