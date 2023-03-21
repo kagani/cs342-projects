@@ -45,7 +45,6 @@ void uppercase(char *str)
 }
 
 // Main
-
 int main(int argc, char *argv[])
 {
     struct timeval tv;
@@ -144,6 +143,20 @@ int main(int argc, char *argv[])
         {
             printf("%s %d\n", res[i].first, res[i].second);
         }
+        for (int i = 0; i < size; i++)
+        {
+            free(res[i].first);
+        }
+        free(res);
+
+        node *temp;
+        while (head != NULL)
+        {
+            temp = head;
+            head = head->next;
+            free(temp->word);
+            free(temp);
+        }
         fclose(ptr);
         return 0;
     }
@@ -164,12 +177,12 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < N * K; i++)
     {
-        char *word = curmem;
+        int len = strlen(curmem);
+
+        char *word = (char *)malloc(sizeof(char) * (len + 1));
+        strcpy(word, curmem);
         int freq = *((int *)(curmem + 64));
-
-        node *cur = (node *)malloc(sizeof(node));
-
-        insert(head, word, strlen(word), freq);
+        insert(head, word, len, freq);
 
         printf("%d) %s : %d\n", i, word, freq);
         curmem += sz + sizeof(int);
@@ -191,6 +204,28 @@ int main(int argc, char *argv[])
     long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
 
     printf("\n\nTime to complete: %ldμs\n", end - start);
+
+    for (int i = 0; i < N; i++)
+    {
+        free(files[i]);
+    }
+
+    node *temp = head->next;
+    free(head);
+    head = temp;
+    while (head != NULL)
+    {
+        temp = head;
+        head = head->next;
+        free(temp->word);
+        free(temp);
+    }
+
+    for (int i = 0; i < size; i++)
+    {
+        free(res[i].first);
+    }
+    free(res);
 
     shmem_dealloc(mptr, shm_fd, shmem_size);
 
