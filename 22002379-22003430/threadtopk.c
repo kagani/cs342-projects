@@ -117,10 +117,6 @@ int main(int argc, char *argv[])
         args[0] = i;
         args[1] = K;
         pthread_create(&threads[i], NULL, (void *)worker, args);
-    }
-
-    for (int i = 0; i < N; i++)
-    {
         pthread_join(threads[i], NULL);
     }
 
@@ -142,18 +138,14 @@ int main(int argc, char *argv[])
 
     FILE *fptr;
     fptr = fopen(outfile, "w");
-    printf("\nTop %d words:\n", size);
     for (int i = 0; i < size; i++)
     {
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
-        printf("%s %d\n", res[i].first, res[i].second);
     }
 
     long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
     gettimeofday(&tv, 0);
     long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
-
-    printf("Time to insert: %ldμs\n", end - start);
 
     return 0;
 }

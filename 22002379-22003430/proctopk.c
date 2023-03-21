@@ -139,11 +139,6 @@ int main(int argc, char *argv[])
 
             cur += MAX_STR * sizeof(char) + sizeof(int);
         }
-        printf("\nTop %d words:\n", size);
-        for (int i = 0; i < size; i++)
-        {
-            printf("%s %d\n", res[i].first, res[i].second);
-        }
         fclose(ptr);
         return 0;
     }
@@ -152,8 +147,6 @@ int main(int argc, char *argv[])
     {
         wait(processes[i]);
     }
-
-    printf("\n=== FROM SHARED MEMORY ===\n\n");
 
     void *curmem = mptr + sizeof(int) + 1;
     size_t sz = MAX_STR * sizeof(char);
@@ -170,8 +163,6 @@ int main(int argc, char *argv[])
         node *cur = (node *)malloc(sizeof(node));
 
         insert(head, word, strlen(word), freq);
-
-        printf("%d) %s : %d\n", i, word, freq);
         curmem += sz + sizeof(int);
     }
 
@@ -179,18 +170,14 @@ int main(int argc, char *argv[])
     fptr = fopen(outfile, "w");
     int size = 0;
     pair *res = topKFrequent(head, K, &size);
-    printf("\nTop %d words:\n", size);
     for (int i = 0; i < size; i++)
     {
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
-        printf("%s %d\n", res[i].first, res[i].second);
     }
 
     long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
     gettimeofday(&tv, 0);
     long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
-
-    printf("\n\nTime to complete: %ldμs\n", end - start);
 
     shmem_dealloc(mptr, shm_fd, shmem_size);
 
