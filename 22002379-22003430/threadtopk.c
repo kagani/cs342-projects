@@ -6,7 +6,6 @@
 #include <limits.h>
 #include "topk.h"
 #include <pthread.h>
-#include <sys/time.h>
 #include <ctype.h>
 
 /*
@@ -81,11 +80,6 @@ void *worker(int *arg)
     int size = 0;
 
     pair *res = topKFrequent(head, K, &size);
-
-    for (int i = 0; i < size; i++)
-    {
-        printf("%s %d\n", res[i].first, res[i].second);
-    }
     results[workerIdx] = res;
     resultsSize[workerIdx] = size;
     fclose(ptr);
@@ -94,11 +88,6 @@ void *worker(int *arg)
 
 int main(int argc, char *argv[])
 {
-
-    // Add argument check here
-    struct timeval tv;
-    gettimeofday(&tv, 0);
-
     int K = atoi(argv[1]);
     char *outfile = argv[2];
     int N = atoi(argv[3]);
@@ -135,7 +124,6 @@ int main(int argc, char *argv[])
     {
         for (int j = 0; j < resultsSize[i]; j++)
         {
-            printf("Inserting %s %d\n", results[i][j].first, results[i][j].second);
             insert(head, results[i][j].first, strlen(results[i][j].first), results[i][j].second);
         }
     }
@@ -145,18 +133,10 @@ int main(int argc, char *argv[])
 
     FILE *fptr;
     fptr = fopen(outfile, "w");
-    printf("\nTop %d words:\n", size);
     for (int i = 0; i < size; i++)
     {
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
-        printf("%s %d\n", res[i].first, res[i].second);
     }
-
-    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
-    gettimeofday(&tv, 0);
-    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
-
-    printf("Time to insert: %ldμs\n", end - start);
 
     // Free allocated memory
     for (int i = 0; i < N; i++)
