@@ -138,15 +138,7 @@ int main(int argc, char *argv[])
 
             cur += MAX_STR * sizeof(char) + sizeof(int);
         }
-        printf("\nTop %d words:\n", size);
-        for (int i = 0; i < size; i++)
-        {
-            printf("%s %d\n", res[i].first, res[i].second);
-        }
-        for (int i = 0; i < size; i++)
-        {
-            free(res[i].first);
-        }
+
         free(res);
 
         node *temp;
@@ -154,7 +146,8 @@ int main(int argc, char *argv[])
         {
             temp = head;
             head = head->next;
-            free(temp->word);
+            if (strcmp(temp->word, ""))
+                free(temp->word);
             free(temp);
         }
         fclose(ptr);
@@ -165,8 +158,6 @@ int main(int argc, char *argv[])
     {
         wait(processes[i]);
     }
-
-    printf("\n=== FROM SHARED MEMORY ===\n\n");
 
     void *curmem = mptr + sizeof(int) + 1;
     size_t sz = MAX_STR * sizeof(char);
@@ -183,8 +174,6 @@ int main(int argc, char *argv[])
         strcpy(word, curmem);
         int freq = *((int *)(curmem + 64));
         insert(head, word, len, freq);
-
-        printf("%d) %s : %d\n", i, word, freq);
         curmem += sz + sizeof(int);
     }
 
@@ -192,18 +181,10 @@ int main(int argc, char *argv[])
     fptr = fopen(outfile, "w");
     int size = 0;
     pair *res = topKFrequent(head, K, &size);
-    printf("\nTop %d words:\n", size);
     for (int i = 0; i < size; i++)
     {
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
-        printf("%s %d\n", res[i].first, res[i].second);
     }
-
-    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
-    gettimeofday(&tv, 0);
-    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
-
-    printf("\n\nTime to complete: %ldμs\n", end - start);
 
     for (int i = 0; i < N; i++)
     {
@@ -217,7 +198,8 @@ int main(int argc, char *argv[])
     {
         temp = head;
         head = head->next;
-        free(temp->word);
+        if (strcmp(temp->word, ""))
+            free(temp->word);
         free(temp);
     }
 
