@@ -81,6 +81,11 @@ void *worker(int *arg)
     int size = 0;
 
     pair *res = topKFrequent(head, K, &size);
+
+    for (int i = 0; i < size; i++)
+    {
+        printf("%s %d\n", res[i].first, res[i].second);
+    }
     results[workerIdx] = res;
     resultsSize[workerIdx] = size;
     fclose(ptr);
@@ -117,11 +122,8 @@ int main(int argc, char *argv[])
         args[0] = i;
         args[1] = K;
         pthread_create(&threads[i], NULL, (void *)worker, args);
-    }
-
-    for (int i = 0; i < N; i++)
-    {
         pthread_join(threads[i], NULL);
+        free(args);
     }
 
     // Process top k again
@@ -133,6 +135,7 @@ int main(int argc, char *argv[])
     {
         for (int j = 0; j < resultsSize[i]; j++)
         {
+            printf("Inserting %s %d\n", results[i][j].first, results[i][j].second);
             insert(head, results[i][j].first, strlen(results[i][j].first), results[i][j].second);
         }
     }
@@ -154,6 +157,21 @@ int main(int argc, char *argv[])
     long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
 
     printf("Time to insert: %ldμs\n", end - start);
+
+    // Free allocated memory
+    for (int i = 0; i < N; i++)
+    {
+        free(files[i]);
+        for (int j = 0; j < resultsSize[i]; j++)
+        {
+            free(results[i][j].first);
+        }
+        free(results[i]);
+    }
+    free(files);
+    free(results);
+    free(resultsSize);
+    free(res); // Free the memory allocated for res
 
     return 0;
 }
