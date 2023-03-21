@@ -138,18 +138,6 @@ int main(int argc, char *argv[])
 
             cur += MAX_STR * sizeof(char) + sizeof(int);
         }
-
-        free(res);
-
-        node *temp;
-        while (head != NULL)
-        {
-            temp = head;
-            head = head->next;
-            if (strcmp(temp->word, ""))
-                free(temp->word);
-            free(temp);
-        }
         fclose(ptr);
         return 0;
     }
@@ -168,12 +156,12 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < N * K; i++)
     {
-        int len = strlen(curmem);
-
-        char *word = (char *)malloc(sizeof(char) * (len + 1));
-        strcpy(word, curmem);
+        char *word = curmem;
         int freq = *((int *)(curmem + 64));
-        insert(head, word, len, freq);
+
+        node *cur = (node *)malloc(sizeof(node));
+
+        insert(head, word, strlen(word), freq);
         curmem += sz + sizeof(int);
     }
 
@@ -190,24 +178,6 @@ int main(int argc, char *argv[])
     {
         free(files[i]);
     }
-
-    node *temp = head->next;
-    free(head);
-    head = temp;
-    while (head != NULL)
-    {
-        temp = head;
-        head = head->next;
-        if (strcmp(temp->word, ""))
-            free(temp->word);
-        free(temp);
-    }
-
-    for (int i = 0; i < size; i++)
-    {
-        free(res[i].first);
-    }
-    free(res);
 
     shmem_dealloc(mptr, shm_fd, shmem_size);
 
