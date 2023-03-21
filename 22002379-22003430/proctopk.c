@@ -108,7 +108,6 @@ int main(int argc, char *argv[])
         text = (char *)malloc(lgth + 1);
         fread(text, 1, lgth, ptr);
         text[lgth] = '\0';
-        fclose(ptr);
 
         tkn = strtok(text, exceptions);
         while (tkn != NULL)
