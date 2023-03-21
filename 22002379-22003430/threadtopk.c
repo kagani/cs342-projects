@@ -138,20 +138,9 @@ int main(int argc, char *argv[])
         fprintf(fptr, "%s %d\n", res[i].first, res[i].second);
     }
 
-    // Free allocated memory
-    for (int i = 0; i < N; i++)
-    {
-        free(files[i]);
-        for (int j = 0; j < resultsSize[i]; j++)
-        {
-            free(results[i][j].first);
-        }
-        free(results[i]);
-    }
-    free(files);
-    free(results);
-    free(resultsSize);
-    free(res); // Free the memory allocated for res
+    long start = (tv.tv_sec) * 1000000 + tv.tv_usec;
+    gettimeofday(&tv, 0);
+    long end = (tv.tv_sec) * 1000000 + tv.tv_usec;
 
     return 0;
 }
