@@ -35,9 +35,10 @@ void removeNode(struct LinkedList* list, int value) {
 }
 
 void printList(struct LinkedList* list) {
+    printf("\nLIST: ");
     struct Node* curr = list->head;
     while (curr != NULL) {
-        printf("%d ", curr->data);
+        printf("%d => ", curr->data);
         curr = curr->next;
     }
     printf("\n");

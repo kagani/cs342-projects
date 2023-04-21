@@ -91,5 +91,15 @@ int main(int argc, char* argv[]) {
         int burst = generateRandom(L, L1, L2);
         long int dif = getTime(start);
         printf("\n\n DIFF: %ld", dif);
+        struct LinkedList *list = (struct LinkedList*) malloc(sizeof(struct LinkedList));
+        insertNode(list, 3);
+        insertNode(list, 9);
+        insertNode(list, 9);
+        insertNode(list, 8);
+        insertNode(list, 7);
+        removeNode(list, 8);
+        removeNode(list, 9);
+        removeNode(list, 15);
+        printList(list);
     }
 }
