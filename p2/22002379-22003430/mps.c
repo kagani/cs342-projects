@@ -5,7 +5,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
-#include "linkedlist.h"
+#include "readyqueue.h"
 
 // Method used to generate random interarrival time and burst lengths
 int generateRandom(int T, int T1, int T2) {
@@ -86,20 +86,28 @@ int main(int argc, char* argv[]) {
         printf("\ngenerating from file");
     }
     else {
+        sleep(1);
         printf("\ngenerating randomly");
         int iat = generateRandom(T, T1, T2);
         int burst = generateRandom(L, L1, L2);
         long int dif = getTime(start);
         printf("\n\n DIFF: %ld", dif);
-        struct LinkedList *list = (struct LinkedList*) malloc(sizeof(struct LinkedList));
-        insertNode(list, 3);
-        insertNode(list, 9);
-        insertNode(list, 9);
-        insertNode(list, 8);
-        insertNode(list, 7);
-        removeNode(list, 8);
-        removeNode(list, 9);
-        removeNode(list, 15);
-        printList(list);
+        struct ReadyQueue *rq = (struct ReadyQueue*) malloc(sizeof(struct ReadyQueue));
+        struct BurstItem* bi = (struct BurstItem*) malloc(sizeof(struct BurstItem));
+        bi->pid = 31;
+        bi->arrivalTime = (int)getTime(start);
+        enqueue(rq, *bi);
+        struct BurstItem* bi2 = (struct BurstItem*) malloc(sizeof(struct BurstItem));
+        bi2->pid = 32;
+        bi2->arrivalTime = (int)getTime(start);
+        enqueue(rq, *bi2);
+        struct BurstItem* bi3 = (struct BurstItem*) malloc(sizeof(struct BurstItem));
+        bi3->pid = 33;
+        bi3->arrivalTime = (int)getTime(start);
+        enqueue(rq, *bi3);
+        dequeue(rq);
+        dequeue(rq);
+        dequeue(rq);
+        printQueue(rq);
     }
 }
