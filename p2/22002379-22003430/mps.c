@@ -5,7 +5,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
-#include "linkedlist.h"
 
 // Method used to generate random interarrival time and burst lengths
 int generateRandom(int T, int T1, int T2)
