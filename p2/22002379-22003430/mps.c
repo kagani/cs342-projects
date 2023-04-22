@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     char* sap = "M";
     char* qs = "RM";
     char* alg = "RR";
-    char* infile = "in.txt";
+    char* infile = "";
     char* outfile = "out.txt";
 
     // Iterate over specified parameters to replace default values
@@ -81,33 +81,65 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Initialize ready queue
+    struct ReadyQueue* rq = (struct ReadyQueue*) malloc(sizeof(struct ReadyQueue));
+    int pidcnt = 0;
+    int cpucnt = 0;
+
+    // Read from file and set the ready queue with burst items
+    FILE* file;
+    file = fopen(infile, "r");
+    if (!file)
+        printf("[-] File does not exist.\n");
+    fseek(file, 0, SEEK_END);
+    long flength = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char* text = (char *)malloc(flength + 1);
+    fread(text, 1, flength, file);
+    text[flength] = '\0';
+
+    const char exceptions[] = " \t\r\n\v\f";
+    char* tkn = strtok(text, exceptions);
+    while (tkn != NULL)
+    {
+        int len = strlen(tkn);
+        char *word = (char *)malloc(sizeof(char) * (len + 1));
+        strcpy(word, tkn);
+        struct BurstItem* bi; 
+        if(strcmp(word, "PL")==0) {
+            tkn = strtok(NULL, exceptions);
+            int len = strlen(tkn);
+            char *burstLength = (char *)malloc(sizeof(char) * (len + 1));
+            strcpy(burstLength, tkn);
+            bi = (struct BurstItem*) malloc(sizeof(struct BurstItem));
+            bi->pid = ++pidcnt;
+            bi->burstLength = atoi(burstLength);
+            bi->arrivalTime = getTime(start);
+            bi->remainingTime = atoi(burstLength);
+            bi->finishTime = -1;
+            bi->turnaroundTime = -1;
+            bi->processorId = cpucnt;
+            printf("\n[+] Enqueuing process #%d", pidcnt);
+            enqueue(rq, *bi);
+        }
+        else if(strcmp(word, "IAT")==0) {
+            tkn = strtok(NULL, exceptions);
+            int len = strlen(tkn);
+            char *iAT = (char *)malloc(sizeof(char) * (len + 1));
+            strcpy(iAT, tkn);
+            sleep(atoi(iAT)/1000);
+        } else {
+            printf("[-] Unknown token.");
+        }
+        tkn = strtok(NULL, exceptions);
+    }
+    printQueue(rq);
+
     // Check burst information generation method
     if(iSpecified & !rSpecified) {
-        printf("\ngenerating from file");
+        printf("\n[+] Generating from file");
     }
     else {
-        sleep(1);
-        printf("\ngenerating randomly");
-        int iat = generateRandom(T, T1, T2);
-        int burst = generateRandom(L, L1, L2);
-        long int dif = getTime(start);
-        printf("\n\n DIFF: %ld", dif);
-        struct ReadyQueue *rq = (struct ReadyQueue*) malloc(sizeof(struct ReadyQueue));
-        struct BurstItem* bi = (struct BurstItem*) malloc(sizeof(struct BurstItem));
-        bi->pid = 31;
-        bi->arrivalTime = (int)getTime(start);
-        enqueue(rq, *bi);
-        struct BurstItem* bi2 = (struct BurstItem*) malloc(sizeof(struct BurstItem));
-        bi2->pid = 32;
-        bi2->arrivalTime = (int)getTime(start);
-        enqueue(rq, *bi2);
-        struct BurstItem* bi3 = (struct BurstItem*) malloc(sizeof(struct BurstItem));
-        bi3->pid = 33;
-        bi3->arrivalTime = (int)getTime(start);
-        enqueue(rq, *bi3);
-        dequeue(rq);
-        dequeue(rq);
-        dequeue(rq);
-        printQueue(rq);
+        printf("\n[+] Generating randomly");
     }
 }
