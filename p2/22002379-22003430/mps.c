@@ -135,14 +135,12 @@ int main(int argc, char *argv[])
         if (strcmp(word, "PL") == 0)
         {
             tkn = strtok(NULL, exceptions);
-            int len = strlen(tkn);
-            char *burstLength = (char *)malloc(sizeof(char) * (len + 1));
-            strcpy(burstLength, tkn);
+            int burstLength = atoi(tkn);
             bi = (struct BurstItem *)malloc(sizeof(struct BurstItem));
             bi->pid = ++pidcnt;
-            bi->burstLength = atoi(burstLength);
+            bi->burstLength = burstLength;
             bi->arrivalTime = getTime(start);
-            bi->remainingTime = atoi(burstLength);
+            bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
             bi->processorId = cpucnt;
