@@ -1,20 +1,28 @@
+#include <pthread.h>
 #include "burstitem.h"
 
 #ifndef READYQUEUE_H
 #define READYQUEUE_H
 
-struct Node {   
-    struct BurstItem data;
-    struct Node* next;
-};
+typedef struct Node Node;
+typedef struct ReadyQueue ReadyQueue;
 
-struct ReadyQueue {
-    struct Node* head;
-    struct Node* tail;
-};
+typedef struct Node
+{
+    BurstItem data;
+    Node *next;
+} Node;
 
-void enqueue(struct ReadyQueue* q, struct BurstItem b);
-void dequeue(struct ReadyQueue* q);
-void printQueue(struct ReadyQueue* q);
+typedef struct ReadyQueue
+{
+    Node *head;
+    Node *tail;
+    int size;
+    pthread_mutex_t mutex;
+} ReadyQueue;
+
+void enqueue(ReadyQueue *q, BurstItem b);
+void dequeue(ReadyQueue *q);
+void printQueue(ReadyQueue *q);
 
 #endif
