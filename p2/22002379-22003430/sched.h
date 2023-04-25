@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <stdbool.h>
 #include "readyqueue.h"
 
 typedef struct SchedProps SchedProps;
@@ -34,11 +35,11 @@ typedef enum QueueSelection // -a QS
     QS_LB  // Least load => min(sum of burst lengths) & min(id) for ties
 } QueueSelection;
 
-typedef enum SchedhuleSource
+typedef enum ScheduleSource
 {
     SOURCE_FILE,
     SOURCE_RANDOM
-} SchedhuleSource;
+} ScheduleSource;
 
 typedef struct SchedProps
 {
@@ -58,10 +59,11 @@ typedef struct SchedProps
     SchedulingAlgorithm alg; // Scheduling algorithm (default ALG_RR)
     char infile[256];        // Input file (default "in.txt")
     char outfile[256];       // No default, but if specified, cannot output to console
-    SchedhuleSource source;  // Source of schedule (default SOURCE_FILE)
+    ScheduleSource source;   // Source of schedule (default SOURCE_FILE)
     int queuesSize;          // Size of queues array (N for multi queue, 1 for single queue)
     ReadyQueue **queues;     // Array of queues for each processor (size N) (1 for single queue)
     struct timeval start;    // Start time of simulation (EPOCH timestamp in us)
+    bool scheduledAll;       // Whether all processes have been scheduled
 } SchedProps;
 
 typedef struct ThreadArgs
