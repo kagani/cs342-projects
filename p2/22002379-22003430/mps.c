@@ -11,22 +11,6 @@
 #include "readyqueue.h"
 #include "sched.h"
 
-// Method used to generate random interarrival time and burst lengths
-int generateRandom(int T, int T1, int T2)
-{
-    srand(time(NULL));
-    double x1 = T2 + 1;
-    int ix1 = 0;
-    while (ix1 < T1 || ix1 > T2)
-    {
-        double r1 = 1.0 / T;
-        double u1 = 1.0 * rand() / RAND_MAX;
-        x1 = (-1.0 * log(1.0 - u1)) / r1;
-        ix1 = x1;
-    }
-    return ix1;
-}
-
 int main(int argc, char *argv[])
 {
 
@@ -92,6 +76,7 @@ int main(int argc, char *argv[])
             L = atoi(argv[++i]);
             L1 = atoi(argv[++i]);
             L2 = atoi(argv[++i]);
+            PC = atoi(argv[++i]);
             rSpecified = 1;
         }
         else

@@ -266,8 +266,10 @@ void sched_file(SchedProps *props)
  * @return int
  */
 int generateRandom(int T, int T1, int T2)
-{
-    srand(time(NULL));
+{   
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    srand((unsigned)t.tv_usec);
     double x1 = T2 + 1;
     int ix1 = 0;
     while (ix1 < T1 || ix1 > T2)
@@ -296,7 +298,57 @@ void sched_random(SchedProps *props)
 {
     // Capture start time
     gettimeofday(&props->start, NULL);
+    ReadyQueue **queues = props->queues;
+    int nextPid = 1;
+    int queueIdx = 0; // for RR, Load Balancing needs something else
     
+    for(int i = 0; i < 2*props->PC-1; i++) {
+        if(i%2==0) {
+            int bl = generateRandom(props->T, props->T1, props->T2);
+            pthread_mutex_lock(&queues[queueIdx]->mutex);
+            BurstItem* bi = (BurstItem*) malloc(sizeof(BurstItem));
+            bi->pid = nextPid++;
+            bi->burstLength = bl;
+            bi->arrivalTime = get_time_diff(&props->start);
+            bi->remainingTime = bl;
+            bi->finishTime = -1;
+            bi->turnaroundTime = -1;
+            bi->processorId = queueIdx;
+
+            // Enqueue method
+            if (props->qs == QS_RR)
+            {
+                printf("aaa %d", bi->pid);
+                enqueue(queues[queueIdx], *bi);
+                queueIdx = (queueIdx + 1) % props->queuesSize;
+            }
+            else if (props->qs == QS_LB)
+            {
+                // Get the shortest queue
+                int shortestQueueIdx = 0;
+                int shortestQueueLoad = queues[0]->queueLoad;
+                for (int i = 1; i < props->queuesSize; i++)
+                {
+                    if (queues[i]->size < shortestQueueLoad)
+                    {
+                        shortestQueueIdx = i;
+                        shortestQueueLoad = queues[i]->queueLoad;
+                    }
+                }
+
+                // Enqueue
+                enqueue(queues[shortestQueueIdx], *bi);
+            }
+            else if (props->qs == QS_NA)
+            {
+                enqueue(queues[0], *bi);
+            }
+            pthread_mutex_unlock(&queues[queueIdx]->mutex);
+        }
+        else {
+            usleep(generateRandom(props->L, props->L1, props->L2) * 1000);
+        }
+    }
 }
 
 /**

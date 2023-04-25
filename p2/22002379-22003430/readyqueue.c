@@ -45,6 +45,7 @@ void printQueue(ReadyQueue *list)
     while (curr != NULL)
     {
         printf("\n[pid: %d, bl: %d, at: %d, rt: %d, ft: %d, tt: %d, proc: %d]", curr->data.pid, curr->data.burstLength, curr->data.arrivalTime, curr->data.remainingTime, curr->data.finishTime, curr->data.turnaroundTime, curr->data.processorId);
+        fflush(stdout);
         curr = curr->next;
     }
     printf("\n");
