@@ -112,21 +112,52 @@ int main(int argc, char *argv[])
     sp->L2 = L2;
     sp->PC = PC;
     sp->outmode = outmode;
-    strcpy(sp->sap, sap);
-    strcpy(sp->qs, qs);
-    strcpy(sp->alg, alg);
-    strcpy(sp->infile, infile);
-    strcpy(sp->outfile, outfile);
-
-    schedule(sp);
-
-    // Check burst information generation method
-    if (iSpecified & !rSpecified)
+    if (strcmp(sap, "M") == 0)
     {
-        printf("\n[+] Generating from file");
+        sp->sap = SAP_MULTI;
+    }
+    else if (strcmp(sap, "S") == 0)
+    {
+        sp->sap = SAP_SINGLE;
+    }
+
+    if (strcmp(qs, "RR") == 0)
+    {
+        sp->qs = QS_RR;
+    }
+    else if (strcmp(qs, "LB") == 0)
+    {
+        sp->qs = QS_LB;
     }
     else
     {
-        printf("\n[+] Generating randomly");
+        sp->qs = QS_NA;
     }
+
+    if (strcmp(alg, "FCFS") == 0)
+    {
+        sp->alg = ALG_FCFS;
+    }
+    else if (strcmp(alg, "SJF") == 0)
+    {
+        sp->alg = ALG_SJF;
+    }
+    else if (strcmp(alg, "RR") == 0)
+    {
+        sp->alg = ALG_RR;
+    }
+
+    strcpy(sp->infile, infile);
+    strcpy(sp->outfile, outfile);
+
+    if (iSpecified && !rSpecified)
+    {
+        sp->source = SOURCE_FILE;
+    }
+    else
+    {
+        sp->source = SOURCE_RANDOM;
+    }
+
+    schedule(sp);
 }
