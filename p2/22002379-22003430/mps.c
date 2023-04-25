@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
     }
 
     sp->scheduledAll = false;
+    sp->finishedQueue = (Queue *)malloc(sizeof(Queue));
 
     schedule(sp);
 }

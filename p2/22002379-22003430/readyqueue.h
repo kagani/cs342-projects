@@ -5,7 +5,7 @@
 #define READYQUEUE_H
 
 typedef struct Node Node;
-typedef struct ReadyQueue ReadyQueue;
+typedef struct Queue Queue;
 
 typedef struct Node
 {
@@ -13,44 +13,37 @@ typedef struct Node
     Node *next;
 } Node;
 
-typedef struct ReadyQueue
+typedef struct Queue
 {
     Node *head;
     Node *tail;
     int size;
     long long queueLoad;
     pthread_mutex_t mutex;
-} ReadyQueue;
+} Queue;
 
-typedef struct FinishedQeueue
-{
-    Node *head;
-    Node *tail;
-    int size;
-} FinishedQueue;
-
-void enqueue(ReadyQueue *q, BurstItem *b);
+void enqueue(Queue *q, BurstItem *b);
 /**
  * @brief Dequeue the first item in the queue
  *
  * @param q
  */
 
-void dequeue(ReadyQueue *rq, FinishedQeueue *fq);
+void dequeue(Queue *rq, Queue *fq);
 /**
  * @brief Dequeue the item at the given index
  *
  * @param list
  * @param idx
  */
-void dequeue_at(ReadyQueue *list, FinishedQeueue *fq, int idx);
+void dequeue_at(Queue *list, Queue *fq, int idx);
 
 /**
  * @brief Requeue the first item in the queue to the end of the queue
  *
  * @param list
  */
-void requeue(ReadyQueue *list);
-void printQueue(ReadyQueue *q);
+void requeue(Queue *list);
+void printQueue(Queue *q);
 
 #endif
