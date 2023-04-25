@@ -20,24 +20,22 @@ void enqueue(ReadyQueue *list, BurstItem value)
     }
 
     list->size++;
+    list->queueLoad += value.burstLength;
 }
 
 void dequeue(ReadyQueue *list)
 {
-    if (list->head == NULL)
+    if (!list->head)
         return;
-    if (list->head->next == NULL)
+    Node *temp = list->head;
+    list->head = list->head->next;
+    if (!list->head)
     {
-        free(list->head);
-        list->head = NULL;
         list->tail = NULL;
-        list->size--;
-        return;
     }
-    Node *temp = list->head->next;
-    free(list->head);
-    list->head = temp;
     list->size--;
+    list->queueLoad -= temp->data.burstLength;
+    free(temp);
 }
 
 void printQueue(ReadyQueue *list)

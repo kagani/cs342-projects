@@ -6,6 +6,7 @@ void *cpu(void *arg)
     ThreadArgs *threadArgs = (ThreadArgs *)arg;
     int cpuIdx = threadArgs->id;
     SchedProps *schedProps = threadArgs->schedProps;
+    struct timeval start = schedProps->start;
     ReadyQueue *queue;
 
     if (schedProps->sap == SAP_SINGLE)
@@ -17,14 +18,25 @@ void *cpu(void *arg)
         queue = schedProps->queues[cpuIdx];
     }
 
-    struct timeval start; // REMOVE THIS LATER INCORRECT
-
-    while (queue->size > 0 || !schedProps->scheduledAll) // Place a flag here to stop the thread when the queue is empty and parsing is done
+    while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
-        // Wait for a job to arrive
-        while (queue->size == 0 || (queue->size == 0 && !schedProps->scheduledAll))
+        if (queue->head && queue->head->data.pid == -1)
         {
+            return;
+        }
+        // Wait for a job to arrive
+        while (queue->size == 0)
+        {
+            if (queue->head && queue->head->data.pid == -1)
+            {
+                return;
+            }
             usleep(1000);
+        }
+
+        if (queue->head && queue->head->data.pid == -1)
+        {
+            return;
         }
 
         // Lock the queue
@@ -96,7 +108,7 @@ void schedule(SchedProps *schedProps)
     }
 
     // Start the scheduler
-    if (strcmp(schedProps->infile, "") == 0)
+    if (schedProps->source == SOURCE_RANDOM)
     {
         sched_random(schedProps);
     }
@@ -162,7 +174,35 @@ void parse_and_enqueue(SchedProps *props)
             pthread_mutex_lock(&queues[queueIdx]->mutex);
             printf("\n[+] Enqueuing process #%d", nextPid);
             fflush(stdout);
-            enqueue(queues[queueIdx], *bi);
+
+            // Enqueue method
+            if (props->qs == QS_RR)
+            {
+                enqueue(queues[queueIdx], *bi);
+                queueIdx = (queueIdx + 1) % props->queuesSize;
+            }
+            else if (props->qs == QS_LB)
+            {
+                // Get the shortest queue
+                int shortestQueueIdx = 0;
+                int shortestQueueLoad = queues[0]->queueLoad;
+                for (int i = 1; i < props->queuesSize; i++)
+                {
+                    if (queues[i]->size < shortestQueueLoad)
+                    {
+                        shortestQueueIdx = i;
+                        shortestQueueLoad = queues[i]->queueLoad;
+                    }
+                }
+
+                // Enqueue
+                enqueue(queues[shortestQueueIdx], *bi);
+            }
+            else if (props->qs == QS_NA)
+            {
+                enqueue(queues[0], *bi);
+            }
+
             pthread_mutex_unlock(&queues[queueIdx]->mutex);
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
@@ -178,6 +218,21 @@ void parse_and_enqueue(SchedProps *props)
 
         tkn = strtok(NULL, exceptions); // Get the next token
     }
+
+    // Add a dummy item to the end of every queue
+    for (int i = 0; i < props->queuesSize; i++)
+    {
+        BurstItem *bi = (BurstItem *)malloc(sizeof(BurstItem));
+        bi->pid = -1;
+        bi->burstLength = -1;
+        bi->arrivalTime = -1;
+        bi->remainingTime = -1;
+        bi->finishTime = -1;
+        bi->turnaroundTime = -1;
+        bi->processorId = -1;
+        enqueue(queues[i], *bi);
+    }
+
     fclose(file);
 }
 
