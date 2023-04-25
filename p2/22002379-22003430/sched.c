@@ -22,21 +22,21 @@ void *cpu(void *arg)
     {
         if (queue->head && queue->head->data.pid == -1)
         {
-            return;
+            return NULL;
         }
         // Wait for a job to arrive
         while (queue->size == 0)
         {
             if (queue->head && queue->head->data.pid == -1)
             {
-                return;
+                return NULL;
             }
             usleep(1000);
         }
 
         if (queue->head && queue->head->data.pid == -1)
         {
-            return;
+            return NULL;
         }
 
         // Lock the queue
@@ -129,6 +129,8 @@ void *cpu(void *arg)
         printf("Unlocked queue\n");
         fflush(stdout);
     }
+
+    pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
 }
 
 void schedule(SchedProps *schedProps)
