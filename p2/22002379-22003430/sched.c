@@ -32,6 +32,9 @@ void *cpu(void *arg)
         printf("Locked queue\n");
         fflush(stdout);
 
+        printf("Queue size: %d", queue->size);
+        fflush(stdout);
+
         // Do the job
         BurstItem bi = queue->head->data; // NOT HEAD SELECT ACCORDING TO TIME
         printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi.pid);

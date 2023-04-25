@@ -31,11 +31,13 @@ void dequeue(ReadyQueue *list)
         free(list->head);
         list->head = NULL;
         list->tail = NULL;
+        list->size--;
         return;
     }
     Node *temp = list->head->next;
     free(list->head);
     list->head = temp;
+    list->size--;
 }
 
 void printQueue(ReadyQueue *list)
