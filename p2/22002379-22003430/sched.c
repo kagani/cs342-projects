@@ -41,30 +41,35 @@ void *cpu(void *arg)
 
         // Lock the queue
         pthread_mutex_lock(&queue->mutex);
-        printf("Locked queue\n");
-        fflush(stdout);
-
-        printf("Queue size: %d", queue->size);
-        fflush(stdout);
 
         // Do the job
-        BurstItem *bi;
+        BurstItem *bi = queue->head->data;
+        if(props->outmode==2)
+            printf("\ntime=%d, cpu=%d, pid=%d, burstlen=%d, remainingtime=%d", get_time_diff(start), bi->processorId, bi->pid, bi->burstLength, bi->remainingTime);
+        else if(props->outmode==3) {
+            printf("\n[+] BURST PICKED BY CPU #%d: Burst pid = %d, Burst Length = %d, Arrival Time = %d, Remaining Time = %d", cpuIdx, bi->pid, bi->burstLength, bi->arrivalTime, bi->remainingTime);
+        }
+
         if (props->alg == ALG_FCFS)
         {
             bi = queue->head->data;
-            printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
-            fflush(stdout);
+            if(props->outmode==3) {
+                printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
+                fflush(stdout);
+            }
 
             usleep(bi->remainingTime * 1000);
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start);
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
-            printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi->pid);
-            fflush(stdout);
-            printf("[+] Process #%d has finished\n", bi->pid);
-            fflush(stdout);
-            printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
-            fflush(stdout);
+            if(props->outmode==3) {
+                printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
+                fflush(stdout);
+                printf("\n[+] Process #%d has finished", bi->pid);
+                fflush(stdout);
+                printf("\n[+] Process #%d has a turnaround time of %d ms", bi->pid, bi->turnaroundTime);
+                fflush(stdout);
+            }
             dequeue(queue, props->finishedQueue);
         }
         else if (props->alg == ALG_SJF)
@@ -79,27 +84,31 @@ void *cpu(void *arg)
                 }
                 curr = curr->next;
             }
-
-            printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
-            fflush(stdout);
-
+            if(props->outmode==3) {
+                printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
+                fflush(stdout);
+            }
             usleep(bi->remainingTime * 1000);
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start);
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
-            printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi->pid);
-            fflush(stdout);
-            printf("[+] Process #%d has finished\n", bi->pid);
-            fflush(stdout);
-            printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
-            fflush(stdout);
+            if(props->outmode==3) {
+                printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
+                fflush(stdout);
+                printf("\n[+] Process #%d has finished", bi->pid);
+                fflush(stdout);
+                printf("\n[+] Process #%d has a turnaround time of %d ms", bi->pid, bi->turnaroundTime);
+                fflush(stdout);
+            }
             dequeue(queue, props->finishedQueue);
         }
         else if (props->alg == ALG_RR)
         {
             bi = queue->head->data;
-            printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
-            fflush(stdout);
+            if(props->outmode==3) {
+                printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
+                fflush(stdout);
+            }
 
             if (bi->remainingTime > props->Q)
             {
@@ -114,20 +123,20 @@ void *cpu(void *arg)
                 bi->remainingTime = 0;
                 bi->finishTime = get_time_diff(start);
                 bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
-                printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi->pid);
-                fflush(stdout);
-                printf("[+] Process #%d has finished\n", bi->pid);
-                fflush(stdout);
-                printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
-                fflush(stdout);
+                if(props->outmode==3) {
+                    printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
+                    fflush(stdout);
+                    printf("\n[+] Process #%d has finished", bi->pid);
+                    fflush(stdout);
+                    printf("\n[+] Process #%d has a turnaround time of %d ms", bi->pid, bi->turnaroundTime);
+                    fflush(stdout);
+                }
                 dequeue(queue, props->finishedQueue);
             }
         }
 
         // Unlock the queue
         pthread_mutex_unlock(&queue->mutex);
-        printf("Unlocked queue\n");
-        fflush(stdout);
     }
 
     pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
@@ -162,8 +171,6 @@ void schedule(SchedProps *schedProps)
     ThreadArgs *threadArgs[N];
     for (int i = 0; i < N; i++)
     {
-        printf("Here!\n");
-        fflush(stdout);
         threadArgs[i] = (ThreadArgs *)malloc(sizeof(ThreadArgs));
         threadArgs[i]->id = i;
         threadArgs[i]->schedProps = schedProps;
@@ -203,7 +210,7 @@ void parse_and_enqueue(SchedProps *props)
 
     if (!file)
     {
-        printf("[-] File does not exist.\n");
+        printf("\n[-] File does not exist.");
         return;
     }
 
@@ -235,8 +242,11 @@ void parse_and_enqueue(SchedProps *props)
             bi->turnaroundTime = -1;
             bi->processorId = queueIdx;
             pthread_mutex_lock(&queues[queueIdx]->mutex);
-            printf("\n[+] Enqueuing process #%d", nextPid);
-            fflush(stdout);
+            if(props->outmode==3) {
+                printf("\n[+] Enqueuing process #%d", nextPid);
+                fflush(stdout);
+            }
+            
 
             // Enqueue method
             if (props->qs == QS_RR)
@@ -276,7 +286,7 @@ void parse_and_enqueue(SchedProps *props)
         }
         else // Should not happen
         {
-            printf("[-] Unknown token.");
+            printf("\n[-] Unknown token.");
         }
 
         tkn = strtok(NULL, exceptions); // Get the next token
@@ -314,7 +324,7 @@ void sched_file(SchedProps *props)
 
     if (strcmp(props->infile, "") == 0)
     {
-        printf("[-] No input file specified. (sched_file)\n");
+        printf("\n[-] No input file specified. (sched_file)");
         exit(1);
     }
 
@@ -383,7 +393,6 @@ void sched_random(SchedProps *props)
             // Enqueue method
             if (props->qs == QS_RR)
             {
-                printf("aaa %d", bi->pid);
                 enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
