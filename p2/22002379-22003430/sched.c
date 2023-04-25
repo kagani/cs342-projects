@@ -51,7 +51,7 @@ void *cpu(void *arg)
         BurstItem *bi;
         if (props->alg == ALG_FCFS)
         {
-            bi = &queue->head->data;
+            bi = queue->head->data;
             printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
             fflush(stdout);
 
@@ -69,13 +69,13 @@ void *cpu(void *arg)
         }
         else if (props->alg == ALG_SJF)
         {
-            bi = &queue->head->data;
+            bi = queue->head->data;
             Node *curr = queue->head;
             while (curr != NULL)
             {
                 if (curr->data.remainingTime < bi->remainingTime)
                 {
-                    bi = &curr->data;
+                    bi = curr->data;
                 }
                 curr = curr->next;
             }
@@ -97,7 +97,7 @@ void *cpu(void *arg)
         }
         else if (props->alg == ALG_RR)
         {
-            bi = &queue->head->data;
+            bi = queue->head->data;
             printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
             fflush(stdout);
 
@@ -241,7 +241,7 @@ void parse_and_enqueue(SchedProps *props)
             // Enqueue method
             if (props->qs == QS_RR)
             {
-                enqueue(queues[queueIdx], *bi);
+                enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
             else if (props->qs == QS_LB)
@@ -259,11 +259,11 @@ void parse_and_enqueue(SchedProps *props)
                 }
 
                 // Enqueue
-                enqueue(queues[shortestQueueIdx], *bi);
+                enqueue(queues[shortestQueueIdx], bi);
             }
             else if (props->qs == QS_NA)
             {
-                enqueue(queues[0], *bi);
+                enqueue(queues[0], bi);
             }
 
             pthread_mutex_unlock(&queues[queueIdx]->mutex);
@@ -293,7 +293,7 @@ void parse_and_enqueue(SchedProps *props)
         bi->finishTime = -1;
         bi->turnaroundTime = -1;
         bi->processorId = -1;
-        enqueue(queues[i], *bi);
+        enqueue(queues[i], bi);
     }
 
     fclose(file);

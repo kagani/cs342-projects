@@ -9,7 +9,7 @@ typedef struct ReadyQueue ReadyQueue;
 
 typedef struct Node
 {
-    BurstItem data;
+    BurstItem *data;
     Node *next;
 } Node;
 
@@ -22,21 +22,28 @@ typedef struct ReadyQueue
     pthread_mutex_t mutex;
 } ReadyQueue;
 
-void enqueue(ReadyQueue *q, BurstItem b);
+typedef struct FinishedQeueue
+{
+    Node *head;
+    Node *tail;
+    int size;
+} FinishedQueue;
+
+void enqueue(ReadyQueue *q, BurstItem *b);
 /**
  * @brief Dequeue the first item in the queue
  *
  * @param q
  */
 
-void dequeue(ReadyQueue *q);
+void dequeue(ReadyQueue *rq, FinishedQeueue *fq);
 /**
  * @brief Dequeue the item at the given index
  *
  * @param list
  * @param idx
  */
-void dequeue_at(ReadyQueue *list, int idx);
+void dequeue_at(ReadyQueue *list, FinishedQeueue *fq, int idx);
 
 /**
  * @brief Requeue the first item in the queue to the end of the queue

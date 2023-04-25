@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void enqueue(ReadyQueue *list, BurstItem value)
+void enqueue(ReadyQueue *list, BurstItem *value)
 {
     Node *newNode = (Node *)malloc(sizeof(Node));
     newNode->data = value;
@@ -40,7 +40,7 @@ void requeue(ReadyQueue *list)
     list->tail = temp;
 }
 
-void dequeue(ReadyQueue *list)
+void dequeue(ReadyQueue *list, FinishedQeueue *fq)
 {
     if (!list->head)
         return;
@@ -52,10 +52,10 @@ void dequeue(ReadyQueue *list)
     }
     list->size--;
     list->queueLoad -= temp->data.burstLength;
-    free(temp);
+    enqueue(fq, temp->data);
 }
 
-void dequeue_at(ReadyQueue *list, int idx)
+void dequeue_at(ReadyQueue *list, FinishedQeueue *fq, int idx)
 {
     if (!list->head)
         return;
@@ -83,7 +83,7 @@ void dequeue_at(ReadyQueue *list, int idx)
 
     list->size--;
     list->queueLoad -= temp->data.burstLength;
-    free(temp);
+    enqueue(fq, temp->data);
 }
 
 void printQueue(ReadyQueue *list)
