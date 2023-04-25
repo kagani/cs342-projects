@@ -204,6 +204,28 @@ void sched_file(SchedProps *props)
 }
 
 /**
+ * @brief Method to generate a random burst length and interarrival time between
+ * the specified parameters specified with the -r flag. The random interarrival 
+ * times or burst lengths selected with this method will not be exactly
+ * exponentially distributed but random enough.
+ * @return int
+ */
+int generateRandom(int T, int T1, int T2)
+{
+    srand(time(NULL));
+    double x1 = T2 + 1;
+    int ix1 = 0;
+    while (ix1 < T1 || ix1 > T2)
+    {
+        double r1 = 1.0 / T;
+        double u1 = 1.0 * rand() / RAND_MAX;
+        x1 = (-1.0 * log(1.0 - u1)) / r1;
+        ix1 = x1;
+    }
+    return ix1;
+}
+
+/**
  * @brief When the scheduler is invoked with the -r flag, this function is called.
  * If -r T T1 T2 L L1 L2 PC option is specified, then interarrival times and
  * burst times will be generated randomly inside the program (default values for
@@ -219,6 +241,7 @@ void sched_random(SchedProps *props)
 {
     // Capture start time
     gettimeofday(&props->start, NULL);
+    
 }
 
 /**
