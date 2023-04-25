@@ -7,11 +7,11 @@ void *cpu(void *arg)
     int cpuIdx = threadArgs->id;
     SchedProps *schedProps = threadArgs->schedProps;
     ReadyQueue *queue = schedProps->queues[0];
-    if (schedProps->queueSize > 1)
+    if (schedProps->queuesSize > 1)
         queue = schedProps->queues[cpuIdx];
     struct timeval start; // REMOVE THIS LATER INCORRECT
 
-    while (1)
+    while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
         // Wait for a job to arrive
         while (queue->size == 0)
@@ -21,38 +21,48 @@ void *cpu(void *arg)
 
         // Lock the queue
         pthread_mutex_lock(&queue->mutex);
+        printf("Locked queue\n");
+        fflush(stdout);
 
         // Do the job
-        BurstItem bi = queue->head->data;
-        printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi.pid);
+        BurstItem bi = queue->head->data; // NOT HEAD SELECT ACCORDING TO TIME
+        printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi.pid);
+        fflush(stdout);
         usleep(bi.remainingTime * 1000);
         bi.remainingTime = 0;
         bi.finishTime = getTime(&start);
         bi.turnaroundTime = bi.finishTime - bi.arrivalTime;
-        printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi.pid);
-        printf("\n[+] Process #%d has finished", bi.pid);
-        printf("\n[+] Process #%d has a turnaround time of %d ms", bi.pid, bi.turnaroundTime);
+        printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi.pid);
+        fflush(stdout);
+        printf("[+] Process #%d has finished\n", bi.pid);
+        fflush(stdout);
+        printf("[+] Process #%d has a turnaround time of %d ms\n", bi.pid, bi.turnaroundTime);
+        fflush(stdout);
         dequeue(queue);
+
         // Unlock the queue
         pthread_mutex_unlock(&queue->mutex);
+        printf("Unlocked queue\n");
+        fflush(stdout);
     }
 }
 
 void schedule(SchedProps *schedProps)
 {
     // Get the arguments
-    int queueSize = schedProps->N;
+    int queuesSize = schedProps->N;
     int N = schedProps->N;
 
     // Create N queues
-    if (strcmp(schedProps->sap, "S") == 0)
+    if (schedProps->sap == SAP_SINGLE)
     {
-        queueSize = 1;
+        queuesSize = 1;
     }
-    schedProps->queueSize = queueSize;
-    ReadyQueue *queues[queueSize];
+
+    schedProps->queuesSize = queuesSize;
+    ReadyQueue *queues[queuesSize];
     schedProps->queues = queues;
-    for (int i = 0; i < queueSize; i++)
+    for (int i = 0; i < queuesSize; i++)
     {
         queues[i] = (ReadyQueue *)malloc(sizeof(struct ReadyQueue));
         queues[i]->size = 0;
@@ -91,7 +101,7 @@ void schedule(SchedProps *schedProps)
     }
 
     // Free queues
-    for (int i = 0; i < N && i < queueSize; i++)
+    for (int i = 0; i < N && i < queuesSize; i++)
     {
         free(queues[i]);
     }
@@ -101,11 +111,15 @@ void parse_and_enqueue(SchedProps *props, struct timeval *start)
 {
     // Parse the input file and create jobs
     FILE *file = fopen(props->infile, "r");
+    ReadyQueue **queues = props->queues;
     int nextPid = 1;
-    int cpucnt = 0;
+    int queueIdx = 0; // for RR, Load Balancing needs something else
 
     if (!file)
+    {
         printf("[-] File does not exist.\n");
+        return;
+    }
 
     fseek(file, 0, SEEK_END);
     long flength = ftell(file);
@@ -133,15 +147,18 @@ void parse_and_enqueue(SchedProps *props, struct timeval *start)
             bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
-            bi->processorId = cpucnt;
+            bi->processorId = queueIdx;
+            pthread_mutex_lock(&queues[queueIdx]->mutex);
             printf("\n[+] Enqueuing process #%d", nextPid);
-            // enqueue(rq, *bi);
+            fflush(stdout);
+            enqueue(queues[queueIdx], *bi);
+            pthread_mutex_unlock(&queues[queueIdx]->mutex);
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
         {
             tkn = strtok(NULL, exceptions);
             int sleepTime = atoi(tkn);
-            sleep(sleepTime / 1000);
+            usleep(sleepTime * 1000);
         }
         else // Should not happen
         {
@@ -169,6 +186,8 @@ void sched_file(SchedProps *schedProps)
         printf("[-] No input file specified. (sched_file)\n");
         exit(1);
     }
+
+    parse_and_enqueue(schedProps, &start);
 }
 
 /**

@@ -18,6 +18,7 @@ typedef struct ReadyQueue
     Node *head;
     Node *tail;
     int size;
+    long long queueLoad;
     pthread_mutex_t mutex;
 } ReadyQueue;
 

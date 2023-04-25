@@ -18,6 +18,8 @@ void enqueue(ReadyQueue *list, BurstItem value)
         list->tail->next = newNode;
         list->tail = newNode;
     }
+
+    list->size++;
 }
 
 void dequeue(ReadyQueue *list)
