@@ -7,7 +7,7 @@ void *cpu(void *arg)
     int cpuIdx = threadArgs->id;
     SchedProps *props = threadArgs->schedProps;
     struct timeval *start = &props->start;
-    ReadyQueue *queue;
+    Queue *queue;
 
     if (props->sap == SAP_SINGLE)
     {
@@ -20,21 +20,21 @@ void *cpu(void *arg)
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
-        if (queue->head && queue->head->data.pid == -1)
+        if (queue->head && queue->head->data->pid == -1)
         {
             return NULL;
         }
         // Wait for a job to arrive
         while (queue->size == 0)
         {
-            if (queue->head && queue->head->data.pid == -1)
+            if (queue->head && queue->head->data->pid == -1)
             {
                 return NULL;
             }
             usleep(1000);
         }
 
-        if (queue->head && queue->head->data.pid == -1)
+        if (queue->head && queue->head->data->pid == -1)
         {
             return NULL;
         }
@@ -51,7 +51,7 @@ void *cpu(void *arg)
         BurstItem *bi;
         if (props->alg == ALG_FCFS)
         {
-            bi = &queue->head->data;
+            bi = queue->head->data;
             printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
             fflush(stdout);
 
@@ -65,17 +65,17 @@ void *cpu(void *arg)
             fflush(stdout);
             printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
             fflush(stdout);
-            dequeue(queue);
+            dequeue(queue, props->finishedQueue);
         }
         else if (props->alg == ALG_SJF)
         {
-            bi = &queue->head->data;
+            bi = queue->head->data;
             Node *curr = queue->head;
             while (curr != NULL)
             {
-                if (curr->data.remainingTime < bi->remainingTime)
+                if (curr->data->remainingTime < bi->remainingTime)
                 {
-                    bi = &curr->data;
+                    bi = curr->data;
                 }
                 curr = curr->next;
             }
@@ -93,11 +93,11 @@ void *cpu(void *arg)
             fflush(stdout);
             printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
             fflush(stdout);
-            dequeue(queue);
+            dequeue(queue, props->finishedQueue);
         }
         else if (props->alg == ALG_RR)
         {
-            bi = &queue->head->data;
+            bi = queue->head->data;
             printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
             fflush(stdout);
 
@@ -105,8 +105,8 @@ void *cpu(void *arg)
             {
                 usleep(props->Q * 1000);
                 bi->remainingTime -= props->Q;
-                enqueue(queue, *bi);
-                dequeue(queue);
+                enqueue(queue, bi);
+                dequeue(queue, props->finishedQueue);
             }
             else
             {
@@ -120,7 +120,7 @@ void *cpu(void *arg)
                 fflush(stdout);
                 printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
                 fflush(stdout);
-                dequeue(queue);
+                dequeue(queue, props->finishedQueue);
             }
         }
 
@@ -146,11 +146,11 @@ void schedule(SchedProps *schedProps)
     }
 
     schedProps->queuesSize = queuesSize;
-    ReadyQueue *queues[queuesSize];
+    Queue *queues[queuesSize];
     schedProps->queues = queues;
     for (int i = 0; i < queuesSize; i++)
     {
-        queues[i] = (ReadyQueue *)malloc(sizeof(struct ReadyQueue));
+        queues[i] = (Queue *)malloc(sizeof(struct Queue));
         queues[i]->size = 0;
         queues[i]->head = NULL;
         queues[i]->tail = NULL;
@@ -197,7 +197,7 @@ void parse_and_enqueue(SchedProps *props)
 {
     // Parse the input file and create jobs
     FILE *file = fopen(props->infile, "r");
-    ReadyQueue **queues = props->queues;
+    Queue **queues = props->queues;
     int nextPid = 1;
     int queueIdx = 0; // for RR, Load Balancing needs something else
 
@@ -241,7 +241,7 @@ void parse_and_enqueue(SchedProps *props)
             // Enqueue method
             if (props->qs == QS_RR)
             {
-                enqueue(queues[queueIdx], *bi);
+                enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
             else if (props->qs == QS_LB)
@@ -259,11 +259,11 @@ void parse_and_enqueue(SchedProps *props)
                 }
 
                 // Enqueue
-                enqueue(queues[shortestQueueIdx], *bi);
+                enqueue(queues[shortestQueueIdx], bi);
             }
             else if (props->qs == QS_NA)
             {
-                enqueue(queues[0], *bi);
+                enqueue(queues[0], bi);
             }
 
             pthread_mutex_unlock(&queues[queueIdx]->mutex);
@@ -293,7 +293,7 @@ void parse_and_enqueue(SchedProps *props)
         bi->finishTime = -1;
         bi->turnaroundTime = -1;
         bi->processorId = -1;
-        enqueue(queues[i], *bi);
+        enqueue(queues[i], bi);
     }
 
     fclose(file);
@@ -323,13 +323,13 @@ void sched_file(SchedProps *props)
 
 /**
  * @brief Method to generate a random burst length and interarrival time between
- * the specified parameters specified with the -r flag. The random interarrival 
+ * the specified parameters specified with the -r flag. The random interarrival
  * times or burst lengths selected with this method will not be exactly
  * exponentially distributed but random enough.
  * @return int
  */
 int generateRandom(int T, int T1, int T2)
-{   
+{
     struct timeval t;
     gettimeofday(&t, NULL);
     srand((unsigned)t.tv_usec);
@@ -361,15 +361,17 @@ void sched_random(SchedProps *props)
 {
     // Capture start time
     gettimeofday(&props->start, NULL);
-    ReadyQueue **queues = props->queues;
+    Queue **queues = props->queues;
     int nextPid = 1;
     int queueIdx = 0; // for RR, Load Balancing needs something else
-    
-    for(int i = 0; i < 2*props->PC-1; i++) {
-        if(i%2==0) {
+
+    for (int i = 0; i < 2 * props->PC - 1; i++)
+    {
+        if (i % 2 == 0)
+        {
             int bl = generateRandom(props->T, props->T1, props->T2);
             pthread_mutex_lock(&queues[queueIdx]->mutex);
-            BurstItem* bi = (BurstItem*) malloc(sizeof(BurstItem));
+            BurstItem *bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = bl;
             bi->arrivalTime = get_time_diff(&props->start);
@@ -382,7 +384,7 @@ void sched_random(SchedProps *props)
             if (props->qs == QS_RR)
             {
                 printf("aaa %d", bi->pid);
-                enqueue(queues[queueIdx], *bi);
+                enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
             else if (props->qs == QS_LB)
@@ -400,15 +402,16 @@ void sched_random(SchedProps *props)
                 }
 
                 // Enqueue
-                enqueue(queues[shortestQueueIdx], *bi);
+                enqueue(queues[shortestQueueIdx], bi);
             }
             else if (props->qs == QS_NA)
             {
-                enqueue(queues[0], *bi);
+                enqueue(queues[0], bi);
             }
             pthread_mutex_unlock(&queues[queueIdx]->mutex);
         }
-        else {
+        else
+        {
             usleep(generateRandom(props->L, props->L1, props->L2) * 1000);
         }
     }

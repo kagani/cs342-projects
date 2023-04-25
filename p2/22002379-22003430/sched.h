@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <math.h>
 #include "readyqueue.h"
 
 typedef struct SchedProps SchedProps;
@@ -61,9 +62,10 @@ typedef struct SchedProps
     char outfile[256];       // No default, but if specified, cannot output to console
     ScheduleSource source;   // Source of schedule (default SOURCE_FILE)
     int queuesSize;          // Size of queues array (N for multi queue, 1 for single queue)
-    ReadyQueue **queues;     // Array of queues for each processor (size N) (1 for single queue)
+    Queue **queues;          // Array of queues for each processor (size N) (1 for single queue)
     struct timeval start;    // Start time of simulation (EPOCH timestamp in us)
     bool scheduledAll;       // Whether all processes have been scheduled
+    Queue *finishedQueue;    // Queue of finished processes
 } SchedProps;
 
 typedef struct ThreadArgs

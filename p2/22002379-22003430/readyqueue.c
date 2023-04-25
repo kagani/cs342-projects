@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void enqueue(ReadyQueue *list, BurstItem value)
+void enqueue(Queue *list, BurstItem *value)
 {
     Node *newNode = (Node *)malloc(sizeof(Node));
     newNode->data = value;
@@ -20,10 +20,10 @@ void enqueue(ReadyQueue *list, BurstItem value)
     }
 
     list->size++;
-    list->queueLoad += value.burstLength;
+    list->queueLoad += value->burstLength;
 }
 
-void requeue(ReadyQueue *list)
+void requeue(Queue *list)
 {
     if (!list->head)
         return;
@@ -34,13 +34,13 @@ void requeue(ReadyQueue *list)
         list->tail = NULL;
     }
     list->size--;
-    list->queueLoad -= temp->data.burstLength;
+    list->queueLoad -= temp->data->burstLength;
     temp->next = NULL;
     list->tail->next = temp;
     list->tail = temp;
 }
 
-void dequeue(ReadyQueue *list)
+void dequeue(Queue *list, Queue *fq)
 {
     if (!list->head)
         return;
@@ -51,11 +51,11 @@ void dequeue(ReadyQueue *list)
         list->tail = NULL;
     }
     list->size--;
-    list->queueLoad -= temp->data.burstLength;
-    free(temp);
+    list->queueLoad -= temp->data->burstLength;
+    enqueue(fq, temp->data);
 }
 
-void dequeue_at(ReadyQueue *list, int idx)
+void dequeue_at(Queue *list, Queue *fq, int idx)
 {
     if (!list->head)
         return;
@@ -82,17 +82,17 @@ void dequeue_at(ReadyQueue *list, int idx)
     }
 
     list->size--;
-    list->queueLoad -= temp->data.burstLength;
-    free(temp);
+    list->queueLoad -= temp->data->burstLength;
+    enqueue(fq, temp->data);
 }
 
-void printQueue(ReadyQueue *list)
+void printQueue(Queue *list)
 {
     printf("\nLIST: ");
     Node *curr = list->head;
     while (curr != NULL)
     {
-        printf("\n[pid: %d, bl: %d, at: %d, rt: %d, ft: %d, tt: %d, proc: %d]", curr->data.pid, curr->data.burstLength, curr->data.arrivalTime, curr->data.remainingTime, curr->data.finishTime, curr->data.turnaroundTime, curr->data.processorId);
+        printf("\n[pid: %d, bl: %d, at: %d, rt: %d, ft: %d, tt: %d, proc: %d]", curr->data->pid, curr->data->burstLength, curr->data->arrivalTime, curr->data->remainingTime, curr->data->finishTime, curr->data->turnaroundTime, curr->data->processorId);
         fflush(stdout);
         curr = curr->next;
     }
