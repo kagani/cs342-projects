@@ -6,9 +6,17 @@ void *cpu(void *arg)
     ThreadArgs *threadArgs = (ThreadArgs *)arg;
     int cpuIdx = threadArgs->id;
     SchedProps *schedProps = threadArgs->schedProps;
-    ReadyQueue *queue = schedProps->queues[0];
-    if (schedProps->queuesSize > 1)
+    ReadyQueue *queue;
+
+    if (schedProps->sap == SAP_SINGLE)
+    {
+        queue = schedProps->queues[0];
+    }
+    else
+    {
         queue = schedProps->queues[cpuIdx];
+    }
+
     struct timeval start; // REMOVE THIS LATER INCORRECT
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
@@ -30,7 +38,7 @@ void *cpu(void *arg)
         fflush(stdout);
         usleep(bi.remainingTime * 1000);
         bi.remainingTime = 0;
-        bi.finishTime = getTime(&start);
+        bi.finishTime = get_time_diff(&start);
         bi.turnaroundTime = bi.finishTime - bi.arrivalTime;
         printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi.pid);
         fflush(stdout);
@@ -107,7 +115,7 @@ void schedule(SchedProps *schedProps)
     }
 }
 
-void parse_and_enqueue(SchedProps *props, struct timeval *start)
+void parse_and_enqueue(SchedProps *props)
 {
     // Parse the input file and create jobs
     FILE *file = fopen(props->infile, "r");
@@ -143,7 +151,7 @@ void parse_and_enqueue(SchedProps *props, struct timeval *start)
             bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = burstLength;
-            bi->arrivalTime = getTime(start);
+            bi->arrivalTime = get_time_diff(start);
             bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
@@ -180,14 +188,16 @@ void parse_and_enqueue(SchedProps *props, struct timeval *start)
  */
 void sched_file(SchedProps *schedProps)
 {
-    struct timeval start;
+    // Capture start time
+    gettimeofday(&props->start, NULL);
+
     if (strcmp(schedProps->infile, "") == 0)
     {
         printf("[-] No input file specified. (sched_file)\n");
         exit(1);
     }
 
-    parse_and_enqueue(schedProps, &start);
+    parse_and_enqueue(schedProps);
 }
 
 /**
@@ -204,11 +214,28 @@ void sched_file(SchedProps *schedProps)
  */
 void sched_random(SchedProps *SchedProps)
 {
-    struct timeval start;
+    // Capture start time
+    gettimeofday(&props->start, NULL);
 }
 
-// Method to compute the simulation time
-long int getTime(struct timeval *start)
+/**
+ * @brief Get the current time in milliseconds EPOCH time
+ *
+ * @return long long
+ */
+long long get_current_time()
+{
+    struct timeval cur;
+    gettimeofday(&cur, NULL);
+    return (cur.tv_sec) * 1000 + (cur.tv_usec) / 1000;
+}
+
+/**
+ * @brief Difference between now and start time in milliseconds
+ *
+ * @return long long
+ */
+long long get_time_diff(struct timeval *start)
 {
     struct timeval cur;
     gettimeofday(&cur, NULL);
