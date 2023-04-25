@@ -13,11 +13,6 @@
 
 int main(int argc, char *argv[])
 {
-
-    // Get current time
-    struct timeval start;
-    gettimeofday(&start, NULL);
-
     // Define the default values of the input parameters
     int N = 2;     // Number of proessors (default 2)
     int Q = 20;    // Quantum time for RR algorithm (default 20 ms)

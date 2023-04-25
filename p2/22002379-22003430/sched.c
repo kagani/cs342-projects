@@ -5,38 +5,38 @@ void *cpu(void *arg)
     // Get the arguments
     ThreadArgs *threadArgs = (ThreadArgs *)arg;
     int cpuIdx = threadArgs->id;
-    SchedProps *schedProps = threadArgs->schedProps;
-    struct timeval start = schedProps->start;
+    SchedProps *props = threadArgs->schedProps;
+    struct timeval *start = &props->start;
     ReadyQueue *queue;
 
-    if (schedProps->sap == SAP_SINGLE)
+    if (props->sap == SAP_SINGLE)
     {
-        queue = schedProps->queues[0];
+        queue = props->queues[0];
     }
     else
     {
-        queue = schedProps->queues[cpuIdx];
+        queue = props->queues[cpuIdx];
     }
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
         if (queue->head && queue->head->data.pid == -1)
         {
-            return;
+            return NULL;
         }
         // Wait for a job to arrive
         while (queue->size == 0)
         {
             if (queue->head && queue->head->data.pid == -1)
             {
-                return;
+                return NULL;
             }
             usleep(1000);
         }
 
         if (queue->head && queue->head->data.pid == -1)
         {
-            return;
+            return NULL;
         }
 
         // Lock the queue
@@ -48,26 +48,89 @@ void *cpu(void *arg)
         fflush(stdout);
 
         // Do the job
-        BurstItem bi = queue->head->data; // NOT HEAD SELECT ACCORDING TO TIME
-        printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi.pid);
-        fflush(stdout);
-        usleep(bi.remainingTime * 1000);
-        bi.remainingTime = 0;
-        bi.finishTime = get_time_diff(&start);
-        bi.turnaroundTime = bi.finishTime - bi.arrivalTime;
-        printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi.pid);
-        fflush(stdout);
-        printf("[+] Process #%d has finished\n", bi.pid);
-        fflush(stdout);
-        printf("[+] Process #%d has a turnaround time of %d ms\n", bi.pid, bi.turnaroundTime);
-        fflush(stdout);
-        dequeue(queue);
+        BurstItem *bi;
+        if (props->alg == ALG_FCFS)
+        {
+            bi = &queue->head->data;
+            printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
+            fflush(stdout);
+
+            usleep(bi->remainingTime * 1000);
+            bi->remainingTime = 0;
+            bi->finishTime = get_time_diff(start);
+            bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
+            printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi->pid);
+            fflush(stdout);
+            printf("[+] Process #%d has finished\n", bi->pid);
+            fflush(stdout);
+            printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
+            fflush(stdout);
+            dequeue(queue);
+        }
+        else if (props->alg == ALG_SJF)
+        {
+            bi = &queue->head->data;
+            Node *curr = queue->head;
+            while (curr != NULL)
+            {
+                if (curr->data.remainingTime < bi->remainingTime)
+                {
+                    bi = &curr->data;
+                }
+                curr = curr->next;
+            }
+
+            printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
+            fflush(stdout);
+
+            usleep(bi->remainingTime * 1000);
+            bi->remainingTime = 0;
+            bi->finishTime = get_time_diff(start);
+            bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
+            printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi->pid);
+            fflush(stdout);
+            printf("[+] Process #%d has finished\n", bi->pid);
+            fflush(stdout);
+            printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
+            fflush(stdout);
+            dequeue(queue);
+        }
+        else if (props->alg == ALG_RR)
+        {
+            bi = &queue->head->data;
+            printf("[+] CPU #%d is executing process #%d\n", cpuIdx, bi->pid);
+            fflush(stdout);
+
+            if (bi->remainingTime > props->Q)
+            {
+                usleep(props->Q * 1000);
+                bi->remainingTime -= props->Q;
+                enqueue(queue, *bi);
+                dequeue(queue);
+            }
+            else
+            {
+                usleep(bi->remainingTime * 1000);
+                bi->remainingTime = 0;
+                bi->finishTime = get_time_diff(start);
+                bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
+                printf("[+] CPU #%d has finished executing process #%d\n", cpuIdx, bi->pid);
+                fflush(stdout);
+                printf("[+] Process #%d has finished\n", bi->pid);
+                fflush(stdout);
+                printf("[+] Process #%d has a turnaround time of %d ms\n", bi->pid, bi->turnaroundTime);
+                fflush(stdout);
+                dequeue(queue);
+            }
+        }
 
         // Unlock the queue
         pthread_mutex_unlock(&queue->mutex);
         printf("Unlocked queue\n");
         fflush(stdout);
     }
+
+    pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
 }
 
 void schedule(SchedProps *schedProps)

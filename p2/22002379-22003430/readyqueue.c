@@ -23,6 +23,23 @@ void enqueue(ReadyQueue *list, BurstItem value)
     list->queueLoad += value.burstLength;
 }
 
+void requeue(ReadyQueue *list)
+{
+    if (!list->head)
+        return;
+    Node *temp = list->head;
+    list->head = list->head->next;
+    if (!list->head)
+    {
+        list->tail = NULL;
+    }
+    list->size--;
+    list->queueLoad -= temp->data.burstLength;
+    temp->next = NULL;
+    list->tail->next = temp;
+    list->tail = temp;
+}
+
 void dequeue(ReadyQueue *list)
 {
     if (!list->head)
@@ -33,6 +50,37 @@ void dequeue(ReadyQueue *list)
     {
         list->tail = NULL;
     }
+    list->size--;
+    list->queueLoad -= temp->data.burstLength;
+    free(temp);
+}
+
+void dequeue_at(ReadyQueue *list, int idx)
+{
+    if (!list->head)
+        return;
+    Node *temp = list->head;
+    Node *prev = NULL;
+    while (idx--)
+    {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (prev)
+    {
+        prev->next = temp->next;
+    }
+    else
+    {
+        list->head = temp->next;
+    }
+
+    if (!temp->next)
+    {
+        list->tail = prev;
+    }
+
     list->size--;
     list->queueLoad -= temp->data.burstLength;
     free(temp);
