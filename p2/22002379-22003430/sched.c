@@ -19,10 +19,10 @@ void *cpu(void *arg)
 
     struct timeval start; // REMOVE THIS LATER INCORRECT
 
-    while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
+    while (queue->size > 0 || !schedProps->scheduledAll) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
         // Wait for a job to arrive
-        while (queue->size == 0)
+        while (queue->size == 0 || (queue->size == 0 && !schedProps->scheduledAll))
         {
             usleep(1000);
         }
@@ -151,7 +151,7 @@ void parse_and_enqueue(SchedProps *props)
             bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = burstLength;
-            bi->arrivalTime = get_time_diff(start);
+            bi->arrivalTime = get_time_diff(&props->start);
             bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
@@ -186,18 +186,18 @@ void parse_and_enqueue(SchedProps *props)
  * represents a cpu burst (i.e., a process) to be simulated (like a PCB).
  * @param SchedProps
  */
-void sched_file(SchedProps *schedProps)
+void sched_file(SchedProps *props)
 {
     // Capture start time
     gettimeofday(&props->start, NULL);
 
-    if (strcmp(schedProps->infile, "") == 0)
+    if (strcmp(props->infile, "") == 0)
     {
         printf("[-] No input file specified. (sched_file)\n");
         exit(1);
     }
 
-    parse_and_enqueue(schedProps);
+    parse_and_enqueue(props);
 }
 
 /**
@@ -212,7 +212,7 @@ void sched_file(SchedProps *schedProps)
  * of bursts to simulate. The unit of all time related parameters is ms.
  * @param SchedProps
  */
-void sched_random(SchedProps *SchedProps)
+void sched_random(SchedProps *props)
 {
     // Capture start time
     gettimeofday(&props->start, NULL);

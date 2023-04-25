@@ -159,5 +159,7 @@ int main(int argc, char *argv[])
         sp->source = SOURCE_RANDOM;
     }
 
+    sp->scheduledAll = false;
+
     schedule(sp);
 }
