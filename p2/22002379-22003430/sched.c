@@ -5,6 +5,7 @@ void *cpu(void *arg)
     // Get the arguments
     ThreadArgs *threadArgs = (ThreadArgs *)arg;
     int cpuIdx = threadArgs->id;
+    printf("CPU #%d started\n", cpuIdx);
     SchedProps *props = threadArgs->schedProps;
     struct timeval *start = &props->start;
     Queue *queue;
@@ -12,10 +13,12 @@ void *cpu(void *arg)
     if (props->sap == SAP_SINGLE)
     {
         queue = props->queues[0];
+        printf("CPU #%d is using the single queue\n", cpuIdx);
     }
     else
     {
         queue = props->queues[cpuIdx];
+        printf("CPU #%d is using multi queue #%d\n", cpuIdx, cpuIdx);
     }
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
@@ -114,8 +117,7 @@ void *cpu(void *arg)
             {
                 usleep(props->Q * 1000);
                 bi->remainingTime -= props->Q;
-                enqueue(queue, bi);
-                dequeue(queue, props->finishedQueue);
+                requeue(queue);
             }
             else
             {
@@ -249,8 +251,9 @@ void parse_and_enqueue(SchedProps *props)
             
 
             // Enqueue method
-            if (props->qs == QS_RR)
+            if (props->qs == QS_RM)
             {
+                printf("Queued process %d into queue %d\n", bi->pid, queueIdx);
                 enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
@@ -391,7 +394,7 @@ void sched_random(SchedProps *props)
             bi->processorId = queueIdx;
 
             // Enqueue method
-            if (props->qs == QS_RR)
+            if (props->qs == QS_RM)
             {
                 enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;

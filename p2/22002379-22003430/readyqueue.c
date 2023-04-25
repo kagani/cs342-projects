@@ -16,6 +16,8 @@ void enqueue(Queue *list, BurstItem *value)
     else
     {
         list->tail->next = newNode;
+        if (newNode->data->pid == -1)
+            return;
         list->tail = newNode;
     }
 
@@ -27,16 +29,11 @@ void requeue(Queue *list)
 {
     if (!list->head)
         return;
+    if (list->head->data->pid == -1 || (list->head->next && list->head->next->data->pid == -1))
+        return;
     Node *temp = list->head;
     list->head = list->head->next;
-    if (!list->head)
-    {
-        list->tail = NULL;
-    }
-    list->size--;
-    list->queueLoad -= temp->data->burstLength;
-    temp->next = NULL;
-    list->tail->next = temp;
+    temp->next = list->tail->next;
     list->tail = temp;
 }
 
