@@ -58,9 +58,10 @@ typedef struct SchedProps
     SchedulingAlgorithm alg; // Scheduling algorithm (default ALG_RR)
     char infile[256];        // Input file (default "in.txt")
     char outfile[256];       // No default, but if specified, cannot output to console
-    SchedhuleSource source;  // Source of schedule (default FILE "in.txt")
+    SchedhuleSource source;  // Source of schedule (default SOURCE_FILE)
     int queuesSize;          // Size of queues array (N for multi queue, 1 for single queue)
     ReadyQueue **queues;     // Array of queues for each processor (size N) (1 for single queue)
+    struct timeval start;    // Start time of simulation (EPOCH timestamp in us)
 } SchedProps;
 
 typedef struct ThreadArgs
@@ -73,4 +74,5 @@ void *cpu(void *arg);
 void schedule(SchedProps *schedProps);
 void sched_file(SchedProps *schedProps);
 void sched_random(SchedProps *schedProps);
-long int getTime(struct timeval *start);
+long long get_current_time();
+long long get_time_diff(struct timeval *start);
