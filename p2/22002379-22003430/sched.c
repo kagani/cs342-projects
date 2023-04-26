@@ -257,7 +257,9 @@ void parse_and_enqueue(SchedProps *props)
     Queue **queues = props->queues;
     int nextPid = 1;
     int rr_queueIdx = 0; // for RR, Load Balancing needs something else
-    long long iatSum = 0;
+    long long iatSum = get_time_diff(&props->start);
+    printf("\n[+] Starting at %lld", iatSum);
+    fflush(stdout);
 
     if (!file)
     {
