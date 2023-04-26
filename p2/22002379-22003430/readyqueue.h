@@ -40,13 +40,13 @@ void enqueue(Queue *q, BurstItem *b);
 void dequeue(Queue *rq, Queue *fq);
 
 /**
- * @brief Dequeue the item at the given index
+ * @brief Dequeue the item at the given pid
  *
  * @param list The queue to dequeue from
  * @param fq The queue to enqueue the dequeued item to
- * @param idx The index of the item to dequeue
+ * @param pid The pid of the item to dequeue
  */
-void dequeue_at(Queue *list, Queue *fq, int idx);
+void dequeue_at(Queue *list, Queue *fq, int pid);
 
 /**
  * @brief Requeue the first item in the queue to the end of the queue
