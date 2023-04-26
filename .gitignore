@@ -51,5 +51,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-mps
-mps_cv
+# Binary files
+*
+!/**/
+!*.*

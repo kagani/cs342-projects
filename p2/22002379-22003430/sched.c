@@ -5,6 +5,7 @@ void *cpu(void *arg)
     // Get the arguments
     ThreadArgs *threadArgs = (ThreadArgs *)arg;
     int cpuIdx = threadArgs->id;
+    printf("CPU #%d started\n", cpuIdx);
     SchedProps *props = threadArgs->schedProps;
     struct timeval *start = &props->start;
     Queue *queue;
@@ -12,10 +13,12 @@ void *cpu(void *arg)
     if (props->sap == SAP_SINGLE)
     {
         queue = props->queues[0];
+        printf("CPU #%d is using the single queue\n", cpuIdx);
     }
     else
     {
         queue = props->queues[cpuIdx];
+        printf("CPU #%d is using multi queue #%d\n", cpuIdx, cpuIdx);
     }
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
@@ -27,16 +30,13 @@ void *cpu(void *arg)
         // Wait for a job to arrive
         while (queue->size == 0)
         {
-            if (queue->head && queue->head->data->pid == -1)
-            {
-                return NULL;
-            }
             usleep(1000);
         }
 
+        // Reached the end of the queue and exit the cpu loop
         if (queue->head && queue->head->data->pid == -1)
         {
-            return NULL;
+            break;
         }
 
         // Lock the queue
@@ -44,16 +44,18 @@ void *cpu(void *arg)
 
         // Do the job
         BurstItem *bi = queue->head->data;
-        if(props->outmode==2)
+        if (props->outmode == 2)
             printf("\ntime=%lld, cpu=%d, pid=%d, burstlen=%d, remainingtime=%d", get_time_diff(start), bi->processorId, bi->pid, bi->burstLength, bi->remainingTime);
-        else if(props->outmode==3) {
+        else if (props->outmode == 3)
+        {
             printf("\n[+] BURST PICKED BY CPU #%d: Burst pid = %d, Burst Length = %d, Arrival Time = %d, Remaining Time = %d", cpuIdx, bi->pid, bi->burstLength, bi->arrivalTime, bi->remainingTime);
         }
 
         if (props->alg == ALG_FCFS)
         {
             bi = queue->head->data;
-            if(props->outmode==3) {
+            if (props->outmode == 3)
+            {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
             }
@@ -62,7 +64,8 @@ void *cpu(void *arg)
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start);
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
-            if(props->outmode==3) {
+            if (props->outmode == 3)
+            {
                 printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
                 printf("\n[+] Process #%d has finished", bi->pid);
@@ -84,7 +87,8 @@ void *cpu(void *arg)
                 }
                 curr = curr->next;
             }
-            if(props->outmode==3) {
+            if (props->outmode == 3)
+            {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
             }
@@ -92,7 +96,8 @@ void *cpu(void *arg)
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start);
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
-            if(props->outmode==3) {
+            if (props->outmode == 3)
+            {
                 printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
                 printf("\n[+] Process #%d has finished", bi->pid);
@@ -105,7 +110,8 @@ void *cpu(void *arg)
         else if (props->alg == ALG_RR)
         {
             bi = queue->head->data;
-            if(props->outmode==3) {
+            if (props->outmode == 3)
+            {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
             }
@@ -114,8 +120,7 @@ void *cpu(void *arg)
             {
                 usleep(props->Q * 1000);
                 bi->remainingTime -= props->Q;
-                enqueue(queue, bi);
-                dequeue(queue, props->finishedQueue);
+                requeue(queue);
             }
             else
             {
@@ -123,7 +128,8 @@ void *cpu(void *arg)
                 bi->remainingTime = 0;
                 bi->finishTime = get_time_diff(start);
                 bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
-                if(props->outmode==3) {
+                if (props->outmode == 3)
+                {
                     printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
                     fflush(stdout);
                     printf("\n[+] Process #%d has finished", bi->pid);
@@ -242,15 +248,16 @@ void parse_and_enqueue(SchedProps *props)
             bi->turnaroundTime = -1;
             bi->processorId = queueIdx;
             pthread_mutex_lock(&queues[queueIdx]->mutex);
-            if(props->outmode==3) {
+            if (props->outmode == 3)
+            {
                 printf("\n[+] Enqueuing process #%d", nextPid);
                 fflush(stdout);
             }
-            
 
             // Enqueue method
-            if (props->qs == QS_RR)
+            if (props->qs == QS_RM)
             {
+                printf("Queued process %d into queue %d\n", bi->pid, queueIdx);
                 enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
@@ -297,12 +304,12 @@ void parse_and_enqueue(SchedProps *props)
     {
         BurstItem *bi = (BurstItem *)malloc(sizeof(BurstItem));
         bi->pid = -1;
-        bi->burstLength = -1;
-        bi->arrivalTime = -1;
-        bi->remainingTime = -1;
-        bi->finishTime = -1;
-        bi->turnaroundTime = -1;
-        bi->processorId = -1;
+        bi->burstLength = 0;
+        bi->arrivalTime = 0;
+        bi->remainingTime = 0;
+        bi->finishTime = 0;
+        bi->turnaroundTime = 0;
+        bi->processorId = 0;
         enqueue(queues[i], bi);
     }
 
@@ -391,7 +398,7 @@ void sched_random(SchedProps *props)
             bi->processorId = queueIdx;
 
             // Enqueue method
-            if (props->qs == QS_RR)
+            if (props->qs == QS_RM)
             {
                 enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
