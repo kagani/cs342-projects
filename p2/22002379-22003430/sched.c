@@ -232,8 +232,7 @@ void parse_and_enqueue(SchedProps *props)
     FILE *file = fopen(props->infile, "r");
     Queue **queues = props->queues;
     int nextPid = 1;
-    int queueIdx = 0; // for RR, Load Balancing needs something else
-    int curIdx = 0;   // For mutex
+    int rr_queueIdx = 0; // for RR, Load Balancing needs something else
 
     if (!file)
     {
@@ -269,7 +268,6 @@ void parse_and_enqueue(SchedProps *props)
             bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
-            bi->processorId = queueIdx;
             if (props->outmode == 3)
             {
                 printf("\n[+] Enqueuing process #%d\n", nextPid - 1);
@@ -279,12 +277,11 @@ void parse_and_enqueue(SchedProps *props)
             // Enqueue method
             if (props->qs == QS_RM)
             {
-                printf("Queued process %d into queue %d\n", bi->pid, queueIdx);
-                pthread_mutex_lock(&queues[queueIdx]->mutex);
-                enqueue(queues[queueIdx], bi);
-                pthread_mutex_unlock(&queues[queueIdx]->mutex);
-                curIdx = queueIdx;
-                queueIdx = (queueIdx + 1) % props->queuesSize;
+                printf("Queued process %d into queue %d\n", bi->pid, rr_queueIdx);
+                pthread_mutex_lock(&queues[rr_queueIdx]->mutex);
+                enqueue(queues[rr_queueIdx], bi);
+                pthread_mutex_unlock(&queues[rr_queueIdx]->mutex);
+                rr_queueIdx = (rr_queueIdx + 1) % props->queuesSize;
             }
             else if (props->qs == QS_LM)
             {
@@ -301,17 +298,16 @@ void parse_and_enqueue(SchedProps *props)
                 }
 
                 // Enqueue
-                queueIdx = shortestQueueIdx;
-                pthread_mutex_lock(&queues[queueIdx]->mutex);
+                bi->processorId = shortestQueueIdx;
+                pthread_mutex_lock(&queues[shortestQueueIdx]->mutex);
                 enqueue(queues[shortestQueueIdx], bi);
-                pthread_mutex_unlock(&queues[queueIdx]->mutex);
+                pthread_mutex_unlock(&queues[shortestQueueIdx]->mutex);
             }
             else if (props->qs == QS_NA)
             {
-                queueIdx = 0;
-                pthread_mutex_lock(&queues[queueIdx]->mutex);
-                enqueue(queues[queueIdx], bi);
-                pthread_mutex_unlock(&queues[queueIdx]->mutex);
+                pthread_mutex_lock(&queues[0]->mutex);
+                enqueue(queues[0], bi);
+                pthread_mutex_unlock(&queues[0]->mutex);
             }
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
