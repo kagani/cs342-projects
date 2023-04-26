@@ -4,8 +4,6 @@
 
 void enqueue(Queue *list, BurstItem *value)
 {
-    printf("Enqueue start\n");
-    fflush(stdout);
     Node *newNode = (Node *)malloc(sizeof(Node));
     newNode->data = value;
     newNode->next = NULL;
@@ -14,6 +12,12 @@ void enqueue(Queue *list, BurstItem *value)
     {
         list->head = newNode;
         newNode->prev = NULL;
+    }
+    else if (!list->tail)
+    {
+        list->tail = newNode;
+        list->head->next = list->tail;
+        list->tail->prev = list->head;
     }
     else
     {
@@ -24,14 +28,10 @@ void enqueue(Queue *list, BurstItem *value)
 
     list->size++;
     list->queueLoad += value->burstLength;
-    printf("Enqueue end\n");
-    fflush(stdout);
 }
 
 void requeue(Queue *list)
 {
-    printf("Requeue start\n");
-    fflush(stdout);
     if (!list->head)
         return;
 
@@ -48,6 +48,13 @@ void requeue(Queue *list)
 
     if (list->tail && list->tail->data->pid == -1)
     {
+        if (!list->tail->prev)
+        {
+            list->tail->prev = cur;
+            cur->next = list->tail;
+            list->head = cur;
+            return;
+        }
         list->tail->prev->next = cur;
         cur->prev = list->tail->prev;
         cur->next = list->tail;
@@ -59,15 +66,10 @@ void requeue(Queue *list)
         cur->prev = list->tail;
         list->tail = cur;
     }
-
-    printf("Requeue end\n");
-    fflush(stdout);
 }
 
 void dequeue(Queue *list, Queue *fq)
 {
-    printf("Dequeue start\n");
-    fflush(stdout);
     if (!list->head)
         return;
     Node *temp = list->head;
@@ -87,8 +89,6 @@ void dequeue(Queue *list, Queue *fq)
     list->queueLoad -= temp->data->burstLength;
     enqueue(fq, temp->data);
     free(temp); // Doesn't free the BurstItem
-    printf("dequeue end\n");
-    fflush(stdout);
 }
 
 void dequeue_at(Queue *list, Queue *fq, int idx)
@@ -122,8 +122,6 @@ void dequeue_at(Queue *list, Queue *fq, int idx)
     list->queueLoad -= temp->data->burstLength;
     enqueue(fq, temp->data);
     free(temp); // Doesn't free the BurstItem
-    printf("dequeue_at end\n");
-    fflush(stdout);
 }
 
 void printQueue(Queue *list)
