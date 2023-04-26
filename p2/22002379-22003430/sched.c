@@ -94,7 +94,7 @@ void *cpu(void *arg)
             Node *curr = queue->head;
             while (curr != NULL)
             {
-                if (curr->data->remainingTime < bi->remainingTime)
+                if (curr->data->pid != -1 && curr->data->remainingTime < bi->remainingTime)
                 {
                     bi = curr->data;
                 }
@@ -120,7 +120,7 @@ void *cpu(void *arg)
             }
             printf("Dequeueing process #%d", bi->pid);
             fflush(stdout);
-            dequeue(queue, props->finishedQueue);
+            dequeue_at(queue, props->finishedQueue, bi->pid);
             printf("Dequeued process #%d", bi->pid);
             fflush(stdout);
         }
