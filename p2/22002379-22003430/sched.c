@@ -215,6 +215,14 @@ void schedule(SchedProps *schedProps)
     {
         free(queues[i]);
     }
+
+    printf("\n\n%3s  %3s  %8s  %3s  %7s  %11s  %10s", "pid", "cpu", "burstlen", "arv", "finish", "waitingtime", "turnaround");
+    Node* cur = schedProps->finishedQueue->head;
+    while(cur!=NULL) {
+        printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->finishTime-cur->data->arrivalTime, cur->data->turnaroundTime);
+        cur = cur->next;
+    }
+    printf("\n");
 }
 
 void parse_and_enqueue(SchedProps *props)
@@ -251,6 +259,8 @@ void parse_and_enqueue(SchedProps *props)
         {
             tkn = strtok(NULL, exceptions);
             int burstLength = atoi(tkn);
+            printf("\n[+] Burst length: %d", burstLength);
+            fflush(stdout);
             bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = burstLength;
@@ -259,11 +269,10 @@ void parse_and_enqueue(SchedProps *props)
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
             bi->processorId = queueIdx;
-            curIdx = queueIdx;
-            pthread_mutex_lock(&queues[curIdx]->mutex);
+            pthread_mutex_lock(&queues[queueIdx]->mutex); // Change pos
             if (props->outmode == 3)
             {
-                printf("\n[+] Enqueuing process #%d\n", nextPid);
+                printf("\n[+] Enqueuing process #%d\n", nextPid - 1);
                 fflush(stdout);
             }
 
@@ -272,16 +281,21 @@ void parse_and_enqueue(SchedProps *props)
             {
                 printf("Queued process %d into queue %d\n", bi->pid, queueIdx);
                 enqueue(queues[queueIdx], bi);
+                curIdx = queueIdx;
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
-            else if (props->qs == QS_LB)
+            else if (props->qs == QS_LM)
             {
                 // Get the shortest queue
                 int shortestQueueIdx = 0;
                 int shortestQueueLoad = queues[0]->queueLoad;
-                for (int i = 1; i < props->queuesSize; i++)
+                printf("Props queues size: %d\n", props->queuesSize);
+                fflush(stdout);
+                for (int i = 0; i < props->queuesSize; i++)
                 {
-                    if (queues[i]->size < shortestQueueLoad)
+                    printf("Queue %d load: %lld\n", i, queues[i]->queueLoad);
+                    fflush(stdout);
+                    if (queues[i]->queueLoad < shortestQueueLoad)
                     {
                         shortestQueueIdx = i;
                         shortestQueueLoad = queues[i]->queueLoad;
@@ -289,10 +303,14 @@ void parse_and_enqueue(SchedProps *props)
                 }
 
                 // Enqueue
+                queueIdx = shortestQueueIdx;
+                printf("LM Queued process %d into queue %d\n", bi->pid, queueIdx);
+                fflush(stdout);
                 enqueue(queues[shortestQueueIdx], bi);
             }
             else if (props->qs == QS_NA)
             {
+                queueIdx = 0;
                 enqueue(queues[0], bi);
             }
             pthread_mutex_unlock(&queues[curIdx]->mutex);
@@ -415,7 +433,7 @@ void sched_random(SchedProps *props)
                 enqueue(queues[queueIdx], bi);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
-            else if (props->qs == QS_LB)
+            else if (props->qs == QS_LM)
             {
                 // Get the shortest queue
                 int shortestQueueIdx = 0;

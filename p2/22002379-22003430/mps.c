@@ -105,9 +105,9 @@ int main(int argc, char *argv[])
     {
         sp->qs = QS_RM;
     }
-    else if (strcmp(qs, "LB") == 0)
+    else if (strcmp(qs, "LM") == 0)
     {
-        sp->qs = QS_LB;
+        sp->qs = QS_LM;
     }
     else
     {
