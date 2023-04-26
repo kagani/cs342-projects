@@ -257,6 +257,7 @@ void parse_and_enqueue(SchedProps *props)
     Queue **queues = props->queues;
     int nextPid = 1;
     int rr_queueIdx = 0; // for RR, Load Balancing needs something else
+    long long iatSum = 0;
 
     if (!file)
     {
@@ -292,7 +293,7 @@ void parse_and_enqueue(SchedProps *props)
             bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = burstLength;
-            bi->arrivalTime = get_time_diff(&props->start);
+            bi->arrivalTime = iatSum;
             bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
@@ -349,6 +350,7 @@ void parse_and_enqueue(SchedProps *props)
         {
             tkn = strtok(NULL, exceptions);
             int sleepTime = atoi(tkn);
+            iatSum += sleepTime;
             usleep(sleepTime * 1000);
         }
         else // Should not happen
