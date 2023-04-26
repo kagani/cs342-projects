@@ -101,9 +101,9 @@ int main(int argc, char *argv[])
         sp->sap = SAP_SINGLE;
     }
 
-    if (strcmp(qs, "RR") == 0)
+    if (strcmp(qs, "RM") == 0)
     {
-        sp->qs = QS_RR;
+        sp->qs = QS_RM;
     }
     else if (strcmp(qs, "LB") == 0)
     {

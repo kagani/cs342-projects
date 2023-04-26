@@ -11,11 +11,12 @@ void enqueue(Queue *list, BurstItem *value)
     if (list->head == NULL)
     {
         list->head = newNode;
-        list->tail = newNode;
+        newNode->prev = NULL;
     }
     else
     {
         list->tail->next = newNode;
+        newNode->prev = list->tail;
         list->tail = newNode;
     }
 
@@ -27,17 +28,32 @@ void requeue(Queue *list)
 {
     if (!list->head)
         return;
-    Node *temp = list->head;
+
+    Node *cur = list->head;
     list->head = list->head->next;
+    list->head->prev = NULL;
+    cur->next = NULL;
+    cur->prev = NULL;
     if (!list->head)
     {
-        list->tail = NULL;
+        list->head = cur;
+        list->tail = cur;
+        return;
     }
-    list->size--;
-    list->queueLoad -= temp->data->burstLength;
-    temp->next = NULL;
-    list->tail->next = temp;
-    list->tail = temp;
+
+    if (list->tail->data->pid == -1)
+    {
+        list->tail->prev->next = cur;
+        cur->prev = list->tail->prev;
+        cur->next = list->tail;
+        list->tail->prev = cur;
+    }
+    else
+    {
+        list->tail->next = cur;
+        cur->prev = list->tail;
+        list->tail = cur;
+    }
 }
 
 void dequeue(Queue *list, Queue *fq)
@@ -46,6 +62,9 @@ void dequeue(Queue *list, Queue *fq)
         return;
     Node *temp = list->head;
     list->head = list->head->next;
+    list->head->prev = NULL;
+    temp->next = NULL;
+    temp->prev = NULL;
     if (!list->head)
     {
         list->tail = NULL;
@@ -53,6 +72,7 @@ void dequeue(Queue *list, Queue *fq)
     list->size--;
     list->queueLoad -= temp->data->burstLength;
     enqueue(fq, temp->data);
+    free(temp); // Doesn't free the BurstItem
 }
 
 void dequeue_at(Queue *list, Queue *fq, int idx)
@@ -60,30 +80,32 @@ void dequeue_at(Queue *list, Queue *fq, int idx)
     if (!list->head)
         return;
     Node *temp = list->head;
-    Node *prev = NULL;
     while (idx--)
     {
-        prev = temp;
         temp = temp->next;
     }
 
-    if (prev)
+    if (temp->prev)
     {
-        prev->next = temp->next;
+        temp->prev->next = temp->next;
+        temp->next->prev = temp->prev;
     }
     else
     {
         list->head = temp->next;
+        temp->next->prev = NULL;
     }
 
     if (!temp->next)
     {
-        list->tail = prev;
+        list->tail = temp->prev;
+        temp->prev->next = NULL;
     }
 
     list->size--;
     list->queueLoad -= temp->data->burstLength;
     enqueue(fq, temp->data);
+    free(temp); // Doesn't free the BurstItem
 }
 
 void printQueue(Queue *list)
