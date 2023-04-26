@@ -25,7 +25,7 @@ void *cpu(void *arg)
     {
         if (queue->head && queue->head->data->pid == -1)
         {
-            return NULL;
+            break;
         }
         // Wait for a job to arrive
         while (queue->size == 0)
@@ -145,7 +145,12 @@ void *cpu(void *arg)
         pthread_mutex_unlock(&queue->mutex);
     }
 
-    pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
+    if (props->sap == SAP_MULTI) // Destroy when all threads are done for single queue
+    {
+        pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
+    }
+
+    pthread_exit(NULL);
 }
 
 void schedule(SchedProps *schedProps)
@@ -199,6 +204,12 @@ void schedule(SchedProps *schedProps)
         pthread_join(threads[i], NULL);
     }
 
+    // Destroy mutex for single queue
+    if (schedProps->sap == SAP_SINGLE)
+    {
+        pthread_mutex_destroy(&queues[0]->mutex);
+    }
+
     // Free queues
     for (int i = 0; i < N && i < queuesSize; i++)
     {
@@ -213,6 +224,7 @@ void parse_and_enqueue(SchedProps *props)
     Queue **queues = props->queues;
     int nextPid = 1;
     int queueIdx = 0; // for RR, Load Balancing needs something else
+    int curIdx = 0;   // For mutex
 
     if (!file)
     {
@@ -247,10 +259,11 @@ void parse_and_enqueue(SchedProps *props)
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
             bi->processorId = queueIdx;
-            pthread_mutex_lock(&queues[queueIdx]->mutex);
+            curIdx = queueIdx;
+            pthread_mutex_lock(&queues[curIdx]->mutex);
             if (props->outmode == 3)
             {
-                printf("\n[+] Enqueuing process #%d", nextPid);
+                printf("\n[+] Enqueuing process #%d\n", nextPid);
                 fflush(stdout);
             }
 
@@ -282,8 +295,7 @@ void parse_and_enqueue(SchedProps *props)
             {
                 enqueue(queues[0], bi);
             }
-
-            pthread_mutex_unlock(&queues[queueIdx]->mutex);
+            pthread_mutex_unlock(&queues[curIdx]->mutex);
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
         {
