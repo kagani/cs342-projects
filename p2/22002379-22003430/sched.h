@@ -33,7 +33,7 @@ typedef enum QueueSelection // -a QS
 {
     QS_NA, // Single queue goes to end of queue
     QS_RM, // Iterates through queues => i % N
-    QS_LB  // Least load => min(sum of burst lengths) & min(id) for ties
+    QS_LM  // Least load => min(sum of burst lengths) & min(id) for ties
 } QueueSelection;
 
 typedef enum ScheduleSource

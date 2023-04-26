@@ -28,6 +28,8 @@ void enqueue(Queue *list, BurstItem *value)
 
     list->size++;
     list->queueLoad += value->burstLength;
+    printf("Increased queue load by %d to %lld\n", value->burstLength, list->queueLoad);
+    fflush(stdout);
 }
 
 void requeue(Queue *list)
@@ -40,6 +42,8 @@ void requeue(Queue *list)
     {
         return;
     }
+
+    list->queueLoad -= cur->data->burstLength;
 
     list->head = list->head->next;
     list->head->prev = NULL;
