@@ -25,7 +25,7 @@ void *cpu(void *arg)
     {
         if (queue->head && queue->head->data->pid == -1)
         {
-            return NULL;
+            break;
         }
         // Wait for a job to arrive
         while (queue->size == 0)
@@ -40,7 +40,11 @@ void *cpu(void *arg)
         }
 
         // Lock the queue
+        printf("\nCPU #%d is locking the queue with id %d\n", cpuIdx, props->sap == SAP_SINGLE ? 0 : cpuIdx);
+        fflush(stdout);
         pthread_mutex_lock(&queue->mutex);
+        printf("\nCPU #%d has locked the queue with id %d\n", cpuIdx, props->sap == SAP_SINGLE ? 0 : cpuIdx);
+        fflush(stdout);
 
         // Do the job
         BurstItem *bi = queue->head->data;
@@ -142,10 +146,22 @@ void *cpu(void *arg)
         }
 
         // Unlock the queue
+        printf("\nCPU #%d is unlocking the queue", cpuIdx);
+        fflush(stdout);
         pthread_mutex_unlock(&queue->mutex);
     }
 
-    pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
+    printf("\n\n\n\n!!!!!!!!!!!!!!!!!!Exiting CPU #%d\n", cpuIdx);
+    fflush(stdout);
+
+    if (props->sap == SAP_MULTI)
+    {
+        printf("Destroying the mutex\n");
+        fflush(stdout);
+        pthread_mutex_destroy(&queue->mutex); // Destroy the mutex
+    }
+
+    pthread_exit(NULL);
 }
 
 void schedule(SchedProps *schedProps)
@@ -213,6 +229,7 @@ void parse_and_enqueue(SchedProps *props)
     Queue **queues = props->queues;
     int nextPid = 1;
     int queueIdx = 0; // for RR, Load Balancing needs something else
+    int curIdx = 0;   // For mutex
 
     if (!file)
     {
@@ -247,10 +264,15 @@ void parse_and_enqueue(SchedProps *props)
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
             bi->processorId = queueIdx;
-            pthread_mutex_lock(&queues[queueIdx]->mutex);
+            curIdx = queueIdx;
+            printf("Locking the queue with index %d\n", queueIdx);
+            fflush(stdout);
+            pthread_mutex_lock(&queues[curIdx]->mutex);
+            printf("Scheduler Locked the queue with index %d\n", queueIdx);
+            fflush(stdout);
             if (props->outmode == 3)
             {
-                printf("\n[+] Enqueuing process #%d", nextPid);
+                printf("\n[+] Enqueuing process #%d\n", nextPid);
                 fflush(stdout);
             }
 
@@ -283,7 +305,9 @@ void parse_and_enqueue(SchedProps *props)
                 enqueue(queues[0], bi);
             }
 
-            pthread_mutex_unlock(&queues[queueIdx]->mutex);
+            printf("Scheduler Unlocking the mutex in queue %d\n", curIdx);
+            fflush(stdout);
+            pthread_mutex_unlock(&queues[curIdx]->mutex);
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
         {
