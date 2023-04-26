@@ -278,6 +278,8 @@ void parse_and_enqueue(SchedProps *props)
             if (props->qs == QS_RM)
             {
                 printf("Queued process %d into queue %d\n", bi->pid, rr_queueIdx);
+                fflush(stdout);
+                bi->processorId = rr_queueIdx;
                 pthread_mutex_lock(&queues[rr_queueIdx]->mutex);
                 enqueue(queues[rr_queueIdx], bi);
                 pthread_mutex_unlock(&queues[rr_queueIdx]->mutex);
@@ -305,6 +307,7 @@ void parse_and_enqueue(SchedProps *props)
             }
             else if (props->qs == QS_NA)
             {
+                bi->processorId = 0;
                 pthread_mutex_lock(&queues[0]->mutex);
                 enqueue(queues[0], bi);
                 pthread_mutex_unlock(&queues[0]->mutex);
