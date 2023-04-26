@@ -23,24 +23,37 @@ void *cpu(void *arg)
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
+        printf("Beginning of cpu loop\n");
+        fflush(stdout);
         if (queue->head && queue->head->data->pid == -1)
         {
             break;
         }
+
+        printf("Waiting for a job to arrive\n");
+        fflush(stdout);
         // Wait for a job to arrive
-        while (queue->size == 0)
+        printf("Queue size: %d\n", queue->size);
+        fflush(stdout);
+        while (1) // Wait for job
         {
+            pthread_mutex_lock(&queue->mutex);
+            if (queue->size > 0)
+            {
+                break;
+            }
+            pthread_mutex_unlock(&queue->mutex);
             usleep(1000);
         }
 
         // Reached the end of the queue and exit the cpu loop
         if (queue->head && queue->head->data->pid == -1)
         {
+            pthread_mutex_unlock(&queue->mutex);
             break;
         }
 
         // Lock the queue
-        pthread_mutex_lock(&queue->mutex);
 
         // Do the job
         BurstItem *bi = queue->head->data;
@@ -105,7 +118,11 @@ void *cpu(void *arg)
                 printf("\n[+] Process #%d has a turnaround time of %d ms", bi->pid, bi->turnaroundTime);
                 fflush(stdout);
             }
+            printf("Dequeueing process #%d", bi->pid);
+            fflush(stdout);
             dequeue(queue, props->finishedQueue);
+            printf("Dequeued process #%d", bi->pid);
+            fflush(stdout);
         }
         else if (props->alg == ALG_RR)
         {
@@ -137,7 +154,12 @@ void *cpu(void *arg)
                     printf("\n[+] Process #%d has a turnaround time of %d ms", bi->pid, bi->turnaroundTime);
                     fflush(stdout);
                 }
+
+                printf("Dequeueing process #%d", bi->pid);
+                fflush(stdout);
                 dequeue(queue, props->finishedQueue);
+                printf("Dequeued process #%d", bi->pid);
+                fflush(stdout);
             }
         }
 
@@ -213,6 +235,8 @@ void schedule(SchedProps *schedProps)
     // Free queues
     for (int i = 0; i < N && i < queuesSize; i++)
     {
+        printf("\nFreeing queue %d", i);
+        fflush(stdout);
         free(queues[i]);
     }
 
@@ -255,8 +279,12 @@ void parse_and_enqueue(SchedProps *props)
         char word[len + 1];
         strcpy(word, tkn);
         BurstItem *bi;
+        printf("Begin parsing word: %s\n", word);
+        fflush(stdout);
         if (strcmp(word, "PL") == 0) // Process Length
         {
+            printf("Here\n");
+            fflush(stdout);
             tkn = strtok(NULL, exceptions);
             int burstLength = atoi(tkn);
             printf("\n[+] Burst length: %d", burstLength);
@@ -307,10 +335,14 @@ void parse_and_enqueue(SchedProps *props)
             }
             else if (props->qs == QS_NA)
             {
+                printf("Here\n");
+                fflush(stdout);
                 bi->processorId = 0;
                 pthread_mutex_lock(&queues[0]->mutex);
                 enqueue(queues[0], bi);
                 pthread_mutex_unlock(&queues[0]->mutex);
+                printf("Also here\n");
+                fflush(stdout);
             }
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
