@@ -4,6 +4,8 @@
 
 void enqueue(Queue *list, BurstItem *value)
 {
+    printf("Enqueue start\n");
+    fflush(stdout);
     Node *newNode = (Node *)malloc(sizeof(Node));
     newNode->data = value;
     newNode->next = NULL;
@@ -11,37 +13,61 @@ void enqueue(Queue *list, BurstItem *value)
     if (list->head == NULL)
     {
         list->head = newNode;
-        list->tail = newNode;
+        newNode->prev = NULL;
     }
     else
     {
         list->tail->next = newNode;
+        newNode->prev = list->tail;
         list->tail = newNode;
     }
 
     list->size++;
     list->queueLoad += value->burstLength;
+    printf("Enqueue end\n");
+    fflush(stdout);
 }
 
 void requeue(Queue *list)
 {
+    printf("Requeue start\n");
+    fflush(stdout);
     if (!list->head)
         return;
-    Node *temp = list->head;
-    list->head = list->head->next;
-    if (!list->head)
+
+    Node *cur = list->head;
+    if (!cur->next) // size == 1
     {
-        list->tail = NULL;
+        return;
     }
-    list->size--;
-    list->queueLoad -= temp->data->burstLength;
-    temp->next = NULL;
-    list->tail->next = temp;
-    list->tail = temp;
+
+    list->head = list->head->next;
+    list->head->prev = NULL;
+    cur->next = NULL;
+    cur->prev = NULL;
+
+    if (list->tail && list->tail->data->pid == -1)
+    {
+        list->tail->prev->next = cur;
+        cur->prev = list->tail->prev;
+        cur->next = list->tail;
+        list->tail->prev = cur;
+    }
+    else
+    {
+        list->tail->next = cur;
+        cur->prev = list->tail;
+        list->tail = cur;
+    }
+
+    printf("Requeue end\n");
+    fflush(stdout);
 }
 
 void dequeue(Queue *list, Queue *fq)
 {
+    printf("Dequeue start\n");
+    fflush(stdout);
     if (!list->head)
         return;
     Node *temp = list->head;
@@ -50,9 +76,19 @@ void dequeue(Queue *list, Queue *fq)
     {
         list->tail = NULL;
     }
+    else
+    {
+        list->head->prev = NULL;
+    }
+    temp->next = NULL;
+    temp->prev = NULL;
+
     list->size--;
     list->queueLoad -= temp->data->burstLength;
     enqueue(fq, temp->data);
+    free(temp); // Doesn't free the BurstItem
+    printf("dequeue end\n");
+    fflush(stdout);
 }
 
 void dequeue_at(Queue *list, Queue *fq, int idx)
@@ -60,30 +96,34 @@ void dequeue_at(Queue *list, Queue *fq, int idx)
     if (!list->head)
         return;
     Node *temp = list->head;
-    Node *prev = NULL;
     while (idx--)
     {
-        prev = temp;
         temp = temp->next;
     }
 
-    if (prev)
+    if (temp->prev)
     {
-        prev->next = temp->next;
+        temp->prev->next = temp->next;
+        temp->next->prev = temp->prev;
     }
     else
     {
         list->head = temp->next;
+        temp->next->prev = NULL;
     }
 
     if (!temp->next)
     {
-        list->tail = prev;
+        list->tail = temp->prev;
+        temp->prev->next = NULL;
     }
 
     list->size--;
     list->queueLoad -= temp->data->burstLength;
     enqueue(fq, temp->data);
+    free(temp); // Doesn't free the BurstItem
+    printf("dequeue_at end\n");
+    fflush(stdout);
 }
 
 void printQueue(Queue *list)

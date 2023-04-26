@@ -32,7 +32,7 @@ typedef enum OutputMode // -m OUTMODE
 typedef enum QueueSelection // -a QS
 {
     QS_NA, // Single queue goes to end of queue
-    QS_RR, // Iterates through queues => i % N
+    QS_RM, // Iterates through queues => i % N
     QS_LB  // Least load => min(sum of burst lengths) & min(id) for ties
 } QueueSelection;
 
