@@ -215,6 +215,14 @@ void schedule(SchedProps *schedProps)
     {
         free(queues[i]);
     }
+
+    printf("\n\n%3s  %3s  %8s  %3s  %7s  %11s  %10s", "pid", "cpu", "burstlen", "arv", "finish", "waitingtime", "turnaround");
+    Node* cur = schedProps->finishedQueue->head;
+    while(cur!=NULL) {
+        printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->finishTime-cur->data->arrivalTime, cur->data->turnaroundTime);
+        cur = cur->next;
+    }
+    printf("\n");
 }
 
 void parse_and_enqueue(SchedProps *props)
