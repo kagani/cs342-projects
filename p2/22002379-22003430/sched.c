@@ -90,15 +90,19 @@ void *cpu(void *arg)
         }
         else if (props->alg == ALG_SJF)
         {
+            int idx = 0;
+            int deqIdx = 0;
             bi = queue->head->data;
             Node *curr = queue->head;
             while (curr != NULL)
             {
-                if (curr->data->remainingTime < bi->remainingTime)
+                if (curr->data->pid != -1 && curr->data->remainingTime < bi->remainingTime)
                 {
                     bi = curr->data;
+                    deqIdx = idx;
                 }
                 curr = curr->next;
+                idx++;
             }
             if (props->outmode == 3)
             {
@@ -120,7 +124,7 @@ void *cpu(void *arg)
             }
             printf("Dequeueing process #%d", bi->pid);
             fflush(stdout);
-            dequeue(queue, props->finishedQueue);
+            dequeue_at(queue, props->finishedQueue, deqIdx);
             printf("Dequeued process #%d", bi->pid);
             fflush(stdout);
         }
