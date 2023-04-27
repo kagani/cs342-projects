@@ -21,6 +21,7 @@ typedef struct Queue
     int size;
     long long queueLoad;
     pthread_mutex_t mutex;
+    pthread_cond_t cv;
 } Queue;
 
 /**
