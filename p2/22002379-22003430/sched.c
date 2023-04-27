@@ -147,6 +147,7 @@ void *cpu(void *arg)
                 bi->remainingTime = 0;
                 bi->finishTime = get_time_diff(start) + execTime;
                 bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
+                bi->processorId = cpuIdx;
                 if (props->outmode == 3)
                 {
                     printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, bi->pid);
