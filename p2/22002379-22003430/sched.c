@@ -5,8 +5,9 @@ void *cpu(void *arg)
     // Get the arguments
     ThreadArgs *threadArgs = (ThreadArgs *)arg;
     int cpuIdx = threadArgs->id;
-    printf("CPU #%d started\n", cpuIdx);
     SchedProps *props = threadArgs->schedProps;
+    if(props->outmode == RICH)
+        printf("CPU #%d started\n", cpuIdx);
     struct timeval *start = &props->start;
     Queue *queue;
     long long execTime = 0;
@@ -14,27 +15,32 @@ void *cpu(void *arg)
     if (props->sap == SAP_SINGLE)
     {
         queue = props->queues[0];
-        printf("CPU #%d is using the single queue\n", cpuIdx);
+        if(props->outmode == RICH)
+            printf("CPU #%d is using the single queue\n", cpuIdx);
     }
     else
     {
         queue = props->queues[cpuIdx];
-        printf("CPU #%d is using multi queue #%d\n", cpuIdx, cpuIdx);
+        if(props->outmode == RICH)
+            printf("CPU #%d is using multi queue #%d\n", cpuIdx, cpuIdx);
     }
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
-        printf("Beginning of cpu loop\n");
+        if(props->outmode == RICH)
+            printf("Beginning of cpu loop\n");
         fflush(stdout);
         if (queue->head && queue->head->data->pid == -1)
         {
             break;
         }
 
-        printf("Waiting for a job to arrive\n");
+        if(props->outmode == RICH)
+            printf("Waiting for a job to arrive\n");
         fflush(stdout);
         // Wait for a job to arrive
-        printf("Queue size: %d\n", queue->size);
+        if(props->outmode == RICH)
+            printf("Queue size: %d\n", queue->size);
         fflush(stdout);
         while (1) // Wait for job
         {
@@ -60,14 +66,14 @@ void *cpu(void *arg)
             BurstItem *burst = dequeue(queue);
             pthread_mutex_unlock(&queue->mutex);
 
-            if (props->outmode == 2)
+            if (props->outmode == INFO)
                 printf("\ntime=%lld, cpu=%d, pid=%d, burstlen=%d, remainingtime=%d", get_time_diff(start), burst->processorId, burst->pid, burst->burstLength, burst->remainingTime);
-            else if (props->outmode == 3)
+            else if (props->outmode == RICH)
             {
                 printf("\n[+] BURST PICKED BY CPU #%d: Burst pid = %d, Burst Length = %d, Arrival Time = %d, Remaining Time = %d", cpuIdx, burst->pid, burst->burstLength, burst->arrivalTime, burst->remainingTime);
             }
 
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, burst->pid);
                 fflush(stdout);
@@ -80,7 +86,7 @@ void *cpu(void *arg)
             burst->finishTime = get_time_diff(start);
             burst->turnaroundTime = burst->finishTime - burst->arrivalTime;
 
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, burst->pid);
                 fflush(stdout);
@@ -111,14 +117,14 @@ void *cpu(void *arg)
             burst = dequeue_at(queue, shortest->data->pid);
             pthread_mutex_unlock(&queue->mutex);
 
-            if (props->outmode == 2)
+            if (props->outmode == INFO)
                 printf("\ntime=%lld, cpu=%d, pid=%d, burstlen=%d, remainingtime=%d", get_time_diff(start), burst->processorId, burst->pid, burst->burstLength, burst->remainingTime);
-            else if (props->outmode == 3)
+            else if (props->outmode == RICH)
             {
                 printf("\n[+] BURST PICKED BY CPU #%d: Burst pid = %d, Burst Length = %d, Arrival Time = %d, Remaining Time = %d", cpuIdx, burst->pid, burst->burstLength, burst->arrivalTime, burst->remainingTime);
             }
 
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, burst->pid);
                 fflush(stdout);
@@ -132,7 +138,7 @@ void *cpu(void *arg)
             burst->finishTime = get_time_diff(start);
             burst->turnaroundTime = burst->finishTime - burst->arrivalTime;
 
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, burst->pid);
                 fflush(stdout);
@@ -146,7 +152,8 @@ void *cpu(void *arg)
             enqueue(props->finishedQueue, burst);
             pthread_mutex_unlock(&props->finishedQueue->mutex);
 
-            printf("Dequeued process #%d", burst->pid);
+            if(props->outmode == RICH)
+                printf("Dequeued process #%d", burst->pid);
             fflush(stdout);
         }
         else if (props->alg == ALG_RR)
@@ -154,14 +161,14 @@ void *cpu(void *arg)
             BurstItem *burst = dequeue(queue);
             pthread_mutex_unlock(&queue->mutex);
 
-            if (props->outmode == 2)
+            if (props->outmode == INFO)
                 printf("\ntime=%lld, cpu=%d, pid=%d, burstlen=%d, remainingtime=%d", get_time_diff(start), burst->processorId, burst->pid, burst->burstLength, burst->remainingTime);
-            else if (props->outmode == 3)
+            else if (props->outmode == RICH)
             {
                 printf("\n[+] BURST PICKED BY CPU #%d: Burst pid = %d, Burst Length = %d, Arrival Time = %d, Remaining Time = %d", cpuIdx, burst->pid, burst->burstLength, burst->arrivalTime, burst->remainingTime);
             }
 
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, burst->pid);
                 fflush(stdout);
@@ -175,9 +182,11 @@ void *cpu(void *arg)
                 usleep(execTime * 1000); // Sleep for the execution time
 
                 pthread_mutex_lock(&queue->mutex);
-                printf("Requeueing process #%d\n", burst->pid);
+                if(props->outmode == RICH)
+                    printf("Requeueing process #%d\n", burst->pid);
                 enqueue(queue, burst);
-                printf("Requeued process #%d\n", burst->pid);
+                if(props->outmode == RICH)
+                    printf("Requeued process #%d\n", burst->pid);
                 pthread_mutex_unlock(&queue->mutex);
             }
             else
@@ -190,7 +199,7 @@ void *cpu(void *arg)
 
                 burst->turnaroundTime = burst->finishTime - burst->arrivalTime;
                 burst->processorId = cpuIdx;
-                if (props->outmode == 3)
+                if (props->outmode == RICH)
                 {
                     printf("\n[+] CPU #%d has finished executing process #%d", cpuIdx, burst->pid);
                     fflush(stdout);
@@ -275,24 +284,41 @@ void schedule(SchedProps *schedProps)
     // Free queues
     for (int i = 0; i < N && i < queuesSize; i++)
     {
-        printf("\nFreeing queue %d", i);
-        fflush(stdout);
+        if(schedProps->outmode == RICH) {
+            printf("\nFreeing queue %d", i);
+            fflush(stdout);
+        }
+
         free(queues[i]);
     }
 
     sort(schedProps->finishedQueue);
 
-    printf("\n\n%3s  %3s  %8s  %3s  %7s  %11s  %10s", "pid", "cpu", "burstlen", "arv", "finish", "waitingtime", "turnaround");
-    Node *cur = schedProps->finishedQueue->head;
-    int sum = 0;
-    while (cur != NULL)
-    {
-        printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->turnaroundTime - cur->data->burstLength, cur->data->turnaroundTime);
-        sum += cur->data->turnaroundTime;
-        cur = cur->next;
+    if(schedProps->outmode == OFILE) {
+        FILE* f = fopen(schedProps->outfile, "w");
+        fprintf(f, "%3s  %3s  %8s  %3s  %7s  %11s  %10s", "pid", "cpu", "burstlen", "arv", "finish", "waitingtime", "turnaround");        Node *cur = schedProps->finishedQueue->head;
+        int sum = 0;
+        while (cur != NULL)
+        {
+            fprintf(f, "\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->turnaroundTime - cur->data->burstLength, cur->data->turnaroundTime);
+            sum += cur->data->turnaroundTime;
+            cur = cur->next;
+        }
+        fprintf(f, "\naverage turnaround time: %d ms", sum/schedProps->finishedQueue->size);
     }
-    printf("\naverage turnaround time: %d ms", sum/schedProps->finishedQueue->size);
-    printf("\n");
+    else {
+        printf("\n\n%3s  %3s  %8s  %3s  %7s  %11s  %10s", "pid", "cpu", "burstlen", "arv", "finish", "waitingtime", "turnaround");
+        Node *cur = schedProps->finishedQueue->head;
+        int sum = 0;
+        while (cur != NULL)
+        {
+            printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->turnaroundTime - cur->data->burstLength, cur->data->turnaroundTime);
+            sum += cur->data->turnaroundTime;
+            cur = cur->next;
+        }
+        printf("\naverage turnaround time: %d ms", sum/schedProps->finishedQueue->size);
+        printf("\n");
+    }
 }
 
 void parse_and_enqueue(SchedProps *props)
@@ -324,16 +350,20 @@ void parse_and_enqueue(SchedProps *props)
         char word[len + 1];
         strcpy(word, tkn);
         BurstItem *bi;
-        printf("Begin parsing word: %s\n", word);
-        fflush(stdout);
+        if(props->outmode == RICH) {
+            printf("Begin parsing word: %s\n", word);
+            fflush(stdout);
+        }
+
         if (strcmp(word, "PL") == 0) // Process Length
         {
-            printf("Here\n");
-            fflush(stdout);
             tkn = strtok(NULL, exceptions);
             int burstLength = atoi(tkn);
-            printf("\n[+] Burst length: %d", burstLength);
-            fflush(stdout);
+            if(props->outmode == RICH) {
+                printf("\n[+] Burst length: %d", burstLength);
+                fflush(stdout);
+            }
+
             bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = burstLength;
@@ -341,7 +371,7 @@ void parse_and_enqueue(SchedProps *props)
             bi->remainingTime = burstLength;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] Enqueuing process #%d\n", nextPid - 1);
                 fflush(stdout);
@@ -350,8 +380,10 @@ void parse_and_enqueue(SchedProps *props)
             // Enqueue method
             if (props->qs == QS_RM)
             {
-                printf("Queued process %d into queue %d\n", bi->pid, rr_queueIdx);
-                fflush(stdout);
+                if (props->outmode == RICH) {
+                    printf("Queued process %d into queue %d\n", bi->pid, rr_queueIdx);
+                    fflush(stdout);
+                }
                 bi->processorId = rr_queueIdx;
                 pthread_mutex_lock(&queues[rr_queueIdx]->mutex);
                 enqueue(queues[rr_queueIdx], bi);
@@ -380,14 +412,10 @@ void parse_and_enqueue(SchedProps *props)
             }
             else if (props->qs == QS_NA)
             {
-                printf("Here\n");
-                fflush(stdout);
                 bi->processorId = 0;
                 pthread_mutex_lock(&queues[0]->mutex);
                 enqueue(queues[0], bi);
                 pthread_mutex_unlock(&queues[0]->mutex);
-                printf("Also here\n");
-                fflush(stdout);
             }
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
@@ -501,7 +529,7 @@ void sched_random(SchedProps *props)
             bi->remainingTime = bl;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
-            if (props->outmode == 3)
+            if (props->outmode == RICH)
             {
                 printf("\n[+] Enqueuing process #%d\n", nextPid - 1);
                 fflush(stdout);

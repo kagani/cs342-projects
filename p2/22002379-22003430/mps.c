@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     }
 
     if(oSpecified) {
-        outmode = CLEAN;
+        sp->outmode = OFILE;
     }
 
     sp->scheduledAll = false;

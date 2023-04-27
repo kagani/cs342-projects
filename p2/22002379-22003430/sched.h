@@ -27,7 +27,8 @@ typedef enum OutputMode // -m OUTMODE
 {
     CLEAN, // No console output
     INFO,  // Basic info
-    RICH   // Detailed info
+    RICH,   // Detailed info
+    OFILE    // Output to file
 } OutputMode;
 
 typedef enum QueueSelection // -a QS
