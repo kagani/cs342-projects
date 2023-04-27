@@ -286,7 +286,7 @@ void schedule(SchedProps *schedProps)
         pthread_mutex_destroy(&queues[0]->mutex);
     }
 
-    // Free queues
+    // Free queues and Nodes
     for (int i = 0; i < N && i < queuesSize; i++)
     {
         if (schedProps->outmode == RICH)
@@ -295,6 +295,8 @@ void schedule(SchedProps *schedProps)
             fflush(stdout);
         }
 
+        free(queues[i]->head->data);
+        free(queues[i]->head);
         free(queues[i]);
     }
 
@@ -314,6 +316,7 @@ void schedule(SchedProps *schedProps)
         }
         fprintf(f, "\naverage turnaround time: %d ms", sum / schedProps->finishedQueue->size);
         fflush(f);
+        fclose(f);
     }
     else
     {
@@ -329,6 +332,28 @@ void schedule(SchedProps *schedProps)
         printf("\naverage turnaround time: %d ms", sum / schedProps->finishedQueue->size);
         printf("\n");
     }
+
+    // Free Nodes and Burstitems
+    Node *cur = schedProps->finishedQueue->head;
+    while (cur != NULL)
+    {
+        Node *next = cur->next;
+        free(cur->data);
+        free(cur);
+        cur = next;
+    }
+
+    // Free threadArgs
+    for (int i = 0; i < N; i++)
+    {
+        free(threadArgs[i]);
+    }
+
+    // Free finishedQueue
+    free(schedProps->finishedQueue);
+
+    // Free schedProps
+    free(schedProps);
 }
 
 void parse_and_enqueue(SchedProps *props)
