@@ -73,11 +73,9 @@ void *cpu(void *arg)
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
             }
-
-            usleep(bi->remainingTime * 1000);
             bi->remainingTime = 0;
-            bi->finishTime = get_time_diff(start);
             bi->processorId = cpuIdx;
+            bi->finishTime = get_time_diff(start) + bi->burstLength;
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
             if (props->outmode == 3)
             {
@@ -109,7 +107,7 @@ void *cpu(void *arg)
             }
             execTime = bi->remainingTime;
             bi->remainingTime = 0;
-            bi->finishTime = get_time_diff(start);
+            bi->finishTime = get_time_diff(start) + execTime;
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
             if (props->outmode == 3)
             {
@@ -145,7 +143,7 @@ void *cpu(void *arg)
             {
                 execTime = bi->remainingTime;
                 bi->remainingTime = 0;
-                bi->finishTime = get_time_diff(start);
+                bi->finishTime = get_time_diff(start) + execTime;
                 bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
                 if (props->outmode == 3)
                 {
