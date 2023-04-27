@@ -34,26 +34,19 @@ void enqueue(Queue *q, BurstItem *b);
 /**
  * @brief Dequeue the first item in the queue
  *
- * @param q The queue to dequeue from
- * @param fq The queue to enqueue the dequeued item to
+ * @param rq
+ * @return BurstItem*
  */
-void dequeue(Queue *rq, Queue *fq);
+BurstItem *dequeue(Queue *rq);
 
 /**
- * @brief Dequeue the item at the given pid
- *
- * @param list The queue to dequeue from
- * @param fq The queue to enqueue the dequeued item to
- * @param pid The pid of the item to dequeue
- */
-void dequeue_at(Queue *list, Queue *fq, int pid);
-
-/**
- * @brief Requeue the first item in the queue to the end of the queue
+ * @brief Dequeue the item with the given pid
  *
  * @param list
+ * @param pid
+ * @return BurstItem*
  */
-void requeue(Queue *list);
+BurstItem *dequeue_at(Queue *list, int pid);
 
 /**
  * @brief Print the queue
@@ -61,5 +54,12 @@ void requeue(Queue *list);
  * @param q
  */
 void printQueue(Queue *q);
+
+/**
+ * @brief Sort the queue based on pid
+ *
+ * @param q
+ */
+void sort(Queue *q);
 
 #endif
