@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
     // Iterate over specified parameters to replace default values
     bool rSpecified = 0;
     bool iSpecified = 0;
+    bool oSpecified = 0;
     for (int i = 1; i < argc; i++)
     {
         char *cur = argv[i];
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
         else if (strcmp(cur, "-o") == 0)
         {
             outfile = argv[++i];
+            oSpecified = 1;
         }
         else if (strcmp(cur, "-r") == 0)
         {
@@ -92,6 +94,7 @@ int main(int argc, char *argv[])
     sp->L2 = L2;
     sp->PC = PC;
     sp->outmode = outmode;
+    sp->outfile = outfile;
     if (strcmp(sap, "M") == 0)
     {
         sp->sap = SAP_MULTI;
@@ -137,6 +140,10 @@ int main(int argc, char *argv[])
     else
     {
         sp->source = SOURCE_RANDOM;
+    }
+
+    if(oSpecified) {
+        outmode = CLEAN;
     }
 
     sp->scheduledAll = false;
