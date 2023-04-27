@@ -73,6 +73,7 @@ void *cpu(void *arg)
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
             }
+            execTime = bi->burstLength;
             bi->remainingTime = 0;
             bi->processorId = cpuIdx;
             bi->finishTime = get_time_diff(start) + bi->burstLength;
