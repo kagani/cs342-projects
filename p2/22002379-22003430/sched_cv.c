@@ -16,22 +16,29 @@ void *cpu(void *arg)
     {
         queue = props->queues[0];
         if (props->outmode == RICH)
+        {
             printf("CPU #%d is using the single queue\n", cpuIdx);
+            fflush(stdout);
+        }
     }
     else
     {
         queue = props->queues[cpuIdx];
         if (props->outmode == RICH)
+        {
             printf("CPU #%d is using multi queue #%d\n", cpuIdx, cpuIdx);
+            fflush(stdout);
+        }
     }
-
-    fflush(stdout);
 
     while (1) // Place a flag here to stop the thread when the queue is empty and parsing is done
     {
         if (props->outmode == RICH)
+        {
             printf("Beginning of cpu loop\n");
-        fflush(stdout);
+            fflush(stdout);
+        }
+
         if (queue->head && queue->head->data->pid == -1)
         {
             break;
@@ -44,16 +51,9 @@ void *cpu(void *arg)
         if (props->outmode == RICH)
             printf("Queue size: %d\n", queue->size);
         fflush(stdout);
-        while (1) // Wait for job
-        {
-            pthread_mutex_lock(&queue->mutex);
-            if (queue->size > 0)
-            {
-                break;
-            }
-            pthread_mutex_unlock(&queue->mutex);
-            usleep(1000);
-        }
+
+        while (queue->size == 0)
+            pthread_cond_wait(&queue->cv, &queue->mutex); // Wait for a job to arrive
 
         // Reached the end of the queue and exit the cpu loop
         if (queue->head && queue->head->data->pid == -1)
@@ -170,8 +170,6 @@ void *cpu(void *arg)
                 printf("\n[+] BURST PICKED BY CPU #%d: Burst pid = %d, Burst Length = %d, Arrival Time = %d, Remaining Time = %d", cpuIdx, burst->pid, burst->burstLength, burst->arrivalTime, burst->remainingTime);
             }
 
-            fflush(stdout);
-
             if (props->outmode == RICH)
             {
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, burst->pid);
@@ -191,7 +189,6 @@ void *cpu(void *arg)
                 enqueue(queue, burst);
                 if (props->outmode == RICH)
                     printf("Requeued process #%d\n", burst->pid);
-                fflush(stdout);
                 pthread_mutex_unlock(&queue->mutex);
             }
             else
@@ -251,6 +248,7 @@ void schedule(SchedProps *schedProps)
         queues[i]->head = NULL;
         queues[i]->tail = NULL;
         pthread_mutex_init(&queues[i]->mutex, NULL);
+        pthread_cond_init(&queues[i]->cv, NULL);
     }
 
     // Create N threads
@@ -313,7 +311,6 @@ void schedule(SchedProps *schedProps)
             cur = cur->next;
         }
         fprintf(f, "\naverage turnaround time: %d ms", sum / schedProps->finishedQueue->size);
-        fflush(f);
     }
     else
     {
@@ -401,6 +398,7 @@ void parse_and_enqueue(SchedProps *props)
                 pthread_mutex_lock(&queues[rr_queueIdx]->mutex);
                 enqueue(queues[rr_queueIdx], bi);
                 pthread_mutex_unlock(&queues[rr_queueIdx]->mutex);
+                pthread_cond_signal(&queues[rr_queueIdx]->cv);
                 rr_queueIdx = (rr_queueIdx + 1) % props->queuesSize;
             }
             else if (props->qs == QS_LM)
@@ -422,6 +420,8 @@ void parse_and_enqueue(SchedProps *props)
                 pthread_mutex_lock(&queues[shortestQueueIdx]->mutex);
                 enqueue(queues[shortestQueueIdx], bi);
                 pthread_mutex_unlock(&queues[shortestQueueIdx]->mutex);
+
+                pthread_cond_signal(&queues[shortestQueueIdx]->cv);
             }
             else if (props->qs == QS_NA)
             {
@@ -429,6 +429,8 @@ void parse_and_enqueue(SchedProps *props)
                 pthread_mutex_lock(&queues[0]->mutex);
                 enqueue(queues[0], bi);
                 pthread_mutex_unlock(&queues[0]->mutex);
+
+                pthread_cond_signal(&queues[0]->cv);
             }
         }
         else if (strcmp(word, "IAT") == 0) // Interarrival Time
