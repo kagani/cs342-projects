@@ -9,6 +9,7 @@ void *cpu(void *arg)
     SchedProps *props = threadArgs->schedProps;
     struct timeval *start = &props->start;
     Queue *queue;
+    long long execTime = 0;
 
     if (props->sap == SAP_SINGLE)
     {
@@ -105,7 +106,7 @@ void *cpu(void *arg)
                 printf("\n[+] CPU #%d is executing process #%d", cpuIdx, bi->pid);
                 fflush(stdout);
             }
-            usleep(bi->remainingTime * 1000);
+            execTime = bi->remainingTime;
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start);
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
@@ -135,13 +136,13 @@ void *cpu(void *arg)
 
             if (bi->remainingTime > props->Q)
             {
-                usleep(props->Q * 1000);
+                execTime = props->Q;
                 bi->remainingTime -= props->Q;
                 requeue(queue);
             }
             else
             {
-                usleep(bi->remainingTime * 1000);
+                execTime = bi->remainingTime;
                 bi->remainingTime = 0;
                 bi->finishTime = get_time_diff(start);
                 bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
@@ -165,6 +166,7 @@ void *cpu(void *arg)
 
         // Unlock the queue
         pthread_mutex_unlock(&queue->mutex);
+        usleep(execTime * 1000); // Sleep for the execution time
     }
 
     if (props->sap == SAP_MULTI) // Destroy when all threads are done for single queue
