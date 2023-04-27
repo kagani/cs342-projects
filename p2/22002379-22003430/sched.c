@@ -77,6 +77,7 @@ void *cpu(void *arg)
             usleep(bi->remainingTime * 1000);
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start);
+            bi->processorId = cpuIdx;
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
             if (props->outmode == 3)
             {
