@@ -246,7 +246,7 @@ void schedule(SchedProps *schedProps)
     Node *cur = schedProps->finishedQueue->head;
     while (cur != NULL)
     {
-        printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->finishTime - cur->data->arrivalTime, cur->data->turnaroundTime);
+        printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->turnaroundTime - cur->data->burstLength, cur->data->turnaroundTime);
         cur = cur->next;
     }
     printf("\n");
