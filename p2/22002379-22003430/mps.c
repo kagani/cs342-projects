@@ -93,8 +93,7 @@ int main(int argc, char *argv[])
     sp->L1 = L1;
     sp->L2 = L2;
     sp->PC = PC;
-    sp->outmode = outmode;
-    sp->outfile = outfile;
+    sp->outmode = outmode - 1;
     if (strcmp(sap, "M") == 0)
     {
         sp->sap = SAP_MULTI;
