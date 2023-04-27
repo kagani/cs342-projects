@@ -25,8 +25,9 @@ typedef enum SchedulingApproach // -a SAP
 
 typedef enum OutputMode // -m OUTMODE
 {
-    CONSOLE,
-    FILEOUT
+    CLEAN, // No console output
+    INFO,  // Basic info
+    RICH   // Detailed info
 } OutputMode;
 
 typedef enum QueueSelection // -a QS
