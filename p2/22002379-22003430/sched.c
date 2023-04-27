@@ -246,11 +246,14 @@ void schedule(SchedProps *schedProps)
 
     printf("\n\n%3s  %3s  %8s  %3s  %7s  %11s  %10s", "pid", "cpu", "burstlen", "arv", "finish", "waitingtime", "turnaround");
     Node *cur = schedProps->finishedQueue->head;
+    int sum = 0;
     while (cur != NULL)
     {
         printf("\n%3d  %3d  %8d  %3d  %7d  %11d  %10d", cur->data->pid, cur->data->processorId, cur->data->burstLength, cur->data->arrivalTime, cur->data->finishTime, cur->data->turnaroundTime - cur->data->burstLength, cur->data->turnaroundTime);
+        sum += cur->data->turnaroundTime;
         cur = cur->next;
     }
+    printf("\naverage turnaround time: %d ms", sum/schedProps->finishedQueue->size);
     printf("\n");
 }
 
