@@ -109,6 +109,7 @@ void *cpu(void *arg)
             execTime = bi->remainingTime;
             bi->remainingTime = 0;
             bi->finishTime = get_time_diff(start) + execTime;
+            bi->processorId = cpuIdx;
             bi->turnaroundTime = bi->finishTime - bi->arrivalTime;
             if (props->outmode == 3)
             {
