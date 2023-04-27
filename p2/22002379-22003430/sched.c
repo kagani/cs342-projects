@@ -456,7 +456,6 @@ void sched_random(SchedProps *props)
         if (i % 2 == 0)
         {
             int bl = generateRandom(props->T, props->T1, props->T2);
-            pthread_mutex_lock(&queues[queueIdx]->mutex);
             BurstItem *bi = (BurstItem *)malloc(sizeof(BurstItem));
             bi->pid = nextPid++;
             bi->burstLength = bl;
@@ -464,12 +463,19 @@ void sched_random(SchedProps *props)
             bi->remainingTime = bl;
             bi->finishTime = -1;
             bi->turnaroundTime = -1;
-            bi->processorId = queueIdx;
+            if (props->outmode == 3)
+            {
+                printf("\n[+] Enqueuing process #%d\n", nextPid - 1);
+                fflush(stdout);
+            }
 
             // Enqueue method
             if (props->qs == QS_RM)
             {
+                bi->processorId = queueIdx;
+                pthread_mutex_lock(&queues[queueIdx]->mutex);
                 enqueue(queues[queueIdx], bi);
+                pthread_mutex_unlock(&queues[queueIdx]->mutex);
                 queueIdx = (queueIdx + 1) % props->queuesSize;
             }
             else if (props->qs == QS_LM)
@@ -487,18 +493,36 @@ void sched_random(SchedProps *props)
                 }
 
                 // Enqueue
+                bi->processorId = shortestQueueIdx;
+                pthread_mutex_lock(&queues[shortestQueueIdx]->mutex);
                 enqueue(queues[shortestQueueIdx], bi);
+                pthread_mutex_unlock(&queues[shortestQueueIdx]->mutex);
             }
             else if (props->qs == QS_NA)
             {
+                pthread_mutex_lock(&queues[0]->mutex);
                 enqueue(queues[0], bi);
+                pthread_mutex_unlock(&queues[0]->mutex);
             }
-            pthread_mutex_unlock(&queues[queueIdx]->mutex);
         }
         else
         {
             usleep(generateRandom(props->L, props->L1, props->L2) * 1000);
         }
+    }
+    for (int i = 0; i < props->queuesSize; i++)
+    {
+        BurstItem *bi = (BurstItem *)malloc(sizeof(BurstItem));
+        bi->pid = -1;
+        bi->burstLength = 0;
+        bi->arrivalTime = 0;
+        bi->remainingTime = 0;
+        bi->finishTime = 0;
+        bi->turnaroundTime = 0;
+        bi->processorId = 0;
+        pthread_mutex_lock(&queues[i]->mutex);
+        enqueue(queues[i], bi);
+        pthread_mutex_unlock(&queues[i]->mutex);
     }
 }
 
