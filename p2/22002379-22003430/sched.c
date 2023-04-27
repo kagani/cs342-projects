@@ -376,7 +376,9 @@ void parse_and_enqueue(SchedProps *props)
         bi->finishTime = 0;
         bi->turnaroundTime = 0;
         bi->processorId = 0;
+        pthread_mutex_lock(&queues[i]->mutex);
         enqueue(queues[i], bi);
+        pthread_mutex_unlock(&queues[i]->mutex);
     }
 
     fclose(file);
