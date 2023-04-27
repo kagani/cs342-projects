@@ -7,98 +7,82 @@ void enqueue(Queue *list, BurstItem *value)
     Node *newNode = (Node *)malloc(sizeof(Node));
     newNode->data = value;
     newNode->next = NULL;
-
-    if (list->head == NULL)
-    {
-        list->head = newNode;
-        newNode->prev = NULL;
-    }
-    else if (!list->tail)
-    {
-        list->tail = newNode;
-        list->head->next = list->tail;
-        list->tail->prev = list->head;
-    }
-    else
-    {
-        list->tail->next = newNode;
-        newNode->prev = list->tail;
-        list->tail = newNode;
-    }
+    newNode->prev = NULL;
 
     list->size++;
     list->queueLoad += value->burstLength;
-    printf("Increased queue load by %d to %lld\n", value->burstLength, list->queueLoad);
-    fflush(stdout);
+
+    // Check if list is empty
+    if (!list->head)
+    {
+        list->head = newNode;
+        list->tail = newNode;
+        return;
+    }
+
+    // Marker check size = 1
+    if (list->head->data->pid == -1)
+    {
+        list->head = newNode;
+        list->head->next = list->tail;
+        list->tail->prev = list->head;
+        return;
+    }
+
+    // Marker check
+    if (list->tail->data->pid == -1)
+    {
+        list->tail->prev->next = newNode;
+        newNode->prev = list->tail->prev;
+        newNode->next = list->tail;
+        list->tail->prev = newNode;
+        return;
+    }
+
+    // Add to end of list
+    list->tail->next = newNode;
+    newNode->prev = list->tail;
+    list->tail = newNode;
 }
 
-void requeue(Queue *list)
+BurstItem *dequeue(Queue *list)
 {
     if (!list->head)
-        return;
+        return NULL;
+    if (!list->head->data->pid == -1)
+    {
+        printf("Error: dequeueing marker\n");
+        fflush(stdout);
+        return NULL;
+    }
 
     Node *cur = list->head;
-    if (!cur->next) // size == 1
-    {
-        return;
-    }
-
-    list->queueLoad -= cur->data->burstLength;
+    BurstItem *res = cur->data;
 
     list->head = list->head->next;
-    list->head->prev = NULL;
+
+    if (list->head)
+        list->head->prev = NULL;
+    else // size = 1, tail == cur
+        list->tail = NULL;
+
     cur->next = NULL;
     cur->prev = NULL;
-
-    if (list->tail && list->tail->data->pid == -1)
-    {
-        if (!list->tail->prev)
-        {
-            list->tail->prev = cur;
-            cur->next = list->tail;
-            list->head = cur;
-            return;
-        }
-        list->tail->prev->next = cur;
-        cur->prev = list->tail->prev;
-        cur->next = list->tail;
-        list->tail->prev = cur;
-    }
-    else
-    {
-        list->tail->next = cur;
-        cur->prev = list->tail;
-        list->tail = cur;
-    }
-}
-
-void dequeue(Queue *list, Queue *fq)
-{
-    if (!list->head)
-        return;
-    Node *temp = list->head;
-    list->head = list->head->next;
-    if (!list->head)
-    {
-        list->tail = NULL;
-    }
-    else
-    {
-        list->head->prev = NULL;
-    }
-    temp->next = NULL;
-    temp->prev = NULL;
+    free(cur); // Doesn't free the BurstItem
 
     list->size--;
-    list->queueLoad -= temp->data->burstLength;
-    enqueue(fq, temp->data);
-    free(temp); // Doesn't free the BurstItem
+    list->queueLoad -= res->burstLength;
+
+    printf("Decreased queue load by %d to %lld\n", res->burstLength, list->queueLoad);
+    fflush(stdout);
+
+    return res;
 }
 
-void dequeue_at(Queue *list, Queue *fq, int pid)
+BurstItem *dequeue_at(Queue *list, int pid)
 {
     if (!list->head)
-        return;
+        return NULL;
 
     Node *cur = list->head;
 
@@ -108,12 +92,11 @@ void dequeue_at(Queue *list, Queue *fq, int pid)
     }
 
     if (!cur)
-        return;
+        return NULL;
 
     if (cur == list->head)
     {
-        dequeue(list, fq);
-        return;
+        return dequeue(list);
     }
 
     cur->prev->next = cur->next;
@@ -127,8 +110,29 @@ void dequeue_at(Queue *list, Queue *fq, int pid)
 
     list->size--;
     list->queueLoad -= cur->data->burstLength;
-    enqueue(fq, cur->data);
+
+    BurstItem *res = cur->data;
     free(cur); // Doesn't free the BurstItem
+    return res;
+}
+
+void sort(Queue *q)
+{
+    if (!q->head)
+        return;
+
+    for (Node *i = q->head; i->next != NULL; i = i->next)
+    {
+        for (Node *j = i->next; j != NULL; j = j->next)
+        {
+            if (i->data->pid > j->data->pid)
+            {
+                BurstItem *temp = i->data;
+                i->data = j->data;
+                j->data = temp;
+            }
+        }
+    }
 }
 
 void printQueue(Queue *list)
