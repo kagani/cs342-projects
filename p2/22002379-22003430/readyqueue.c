@@ -73,9 +73,6 @@ BurstItem *dequeue(Queue *list)
     list->size--;
     list->queueLoad -= res->burstLength;
 
-    printf("Decreased queue load by %d to %lld\n", res->burstLength, list->queueLoad);
-    fflush(stdout);
-
     return res;
 }
 
