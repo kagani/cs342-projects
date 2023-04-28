@@ -87,6 +87,7 @@ void *cpu(void *arg)
             usleep(execTime * 1000); // Sleep for the execution time
             burst->finishTime = get_time_diff(start);
             burst->turnaroundTime = burst->finishTime - burst->arrivalTime;
+            add_load(queue, -execTime);
 
             if (props->outmode == RICH)
             {
@@ -102,6 +103,7 @@ void *cpu(void *arg)
             enqueue(props->finishedQueue, burst);
             pthread_mutex_unlock(&props->finishedQueue->mutex);
         }
+
         else if (props->alg == ALG_SJF)
         {
             BurstItem *burst;
@@ -139,6 +141,7 @@ void *cpu(void *arg)
             usleep(execTime * 1000); // Sleep for the execution time
             burst->finishTime = get_time_diff(start);
             burst->turnaroundTime = burst->finishTime - burst->arrivalTime;
+            add_load(queue, -execTime);
 
             if (props->outmode == RICH)
             {
@@ -184,6 +187,7 @@ void *cpu(void *arg)
                 burst->remainingTime -= props->Q;
 
                 usleep(execTime * 1000); // Sleep for the execution time
+                add_load(queue, -execTime);
 
                 pthread_mutex_lock(&queue->mutex);
                 if (props->outmode == RICH)
@@ -201,6 +205,7 @@ void *cpu(void *arg)
 
                 usleep(execTime * 1000); // Sleep for the execution time
                 burst->finishTime = get_time_diff(start);
+                add_load(queue, -execTime);
 
                 burst->turnaroundTime = burst->finishTime - burst->arrivalTime;
                 burst->processorId = cpuIdx;

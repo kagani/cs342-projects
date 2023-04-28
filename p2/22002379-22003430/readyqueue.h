@@ -63,4 +63,12 @@ void printQueue(Queue *q);
  */
 void sort(Queue *q);
 
+/**
+ * @brief Alter the queue load
+ *
+ * @param list
+ * @param value
+ */
+void add_load(Queue *list, int value);
+
 #endif
