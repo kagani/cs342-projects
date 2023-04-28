@@ -10,7 +10,6 @@ void enqueue(Queue *list, BurstItem *value)
     newNode->prev = NULL;
 
     list->size++;
-    list->queueLoad += value->burstLength;
 
     // Check if list is empty
     if (!list->head)
@@ -40,9 +39,15 @@ void enqueue(Queue *list, BurstItem *value)
     }
 
     // Add to end of list
+    list->queueLoad += value->remainingTime;
     list->tail->next = newNode;
     newNode->prev = list->tail;
     list->tail = newNode;
+}
+
+void add_load(Queue *list, int value)
+{
+    list->queueLoad += value;
 }
 
 BurstItem *dequeue(Queue *list)
@@ -71,7 +76,6 @@ BurstItem *dequeue(Queue *list)
     free(cur); // Doesn't free the BurstItem
 
     list->size--;
-    list->queueLoad -= res->burstLength;
 
     return res;
 }
@@ -106,7 +110,6 @@ BurstItem *dequeue_at(Queue *list, int pid)
     cur->prev = NULL;
 
     list->size--;
-    list->queueLoad -= cur->data->burstLength;
 
     BurstItem *res = cur->data;
     free(cur); // Doesn't free the BurstItem
