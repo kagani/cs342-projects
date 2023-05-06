@@ -10,7 +10,7 @@
 #define NUMP 2        // number of threads
 
 int AVOID = 1;
-int exist[1] =  {8};  // resources existing in the system
+int exist[1] = {8};  // resources existing in the system
 
 void pr (int tid, char astr[], int m, int r[])
 {
@@ -25,7 +25,6 @@ void pr (int tid, char astr[], int m, int r[])
     printf ("]\n");
 }
 
-
 void setarray (int r[MAXR], int m, ...)
 {
     va_list valist;
@@ -38,7 +37,6 @@ void setarray (int r[MAXR], int m, ...)
     va_end(valist);
     return;
 }
-
 
 void *threadfunc1 (void *a)
 {
@@ -70,7 +68,6 @@ void *threadfunc1 (void *a)
     pthread_exit(NULL);
 }
 
-
 void *threadfunc2 (void *a)
 {
     int tid;
@@ -100,7 +97,6 @@ void *threadfunc2 (void *a)
     rm_thread_ended ();
     pthread_exit(NULL);
 }
-
 
 int main(int argc, char **argv)
 {
