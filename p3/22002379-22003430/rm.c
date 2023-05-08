@@ -362,11 +362,3 @@ void rm_print_state (char hmsg[])
 {
     return;
 }
-
-int main() {
-    int exs[5] = {3, 4, 5, 6, 7};
-    rm_init(3, 5, exs, 1);
-    printMat(maxDemand, 3, 5);
-
-    return 0;
-}
