@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include "rm.h"
 #include <stdbool.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+
 
 // global variables
 
@@ -23,6 +27,7 @@ int *available;
 
 pthread_mutex_t mutex;
 pthread_cond_t *cvs;
+pthread_t tids[MAXP];
 
 // end of global variables
 void printMat(int **mat, int n, int m)
@@ -103,6 +108,14 @@ bool checkAvailability(int request[])
     return true;
 }
 
+int get_tid(pthread_t self_tid) {
+    for(int i = 0; i < MAXP; i++) {
+        if(tids[i] == self_tid)
+            return i;
+    }
+    return -1;
+}
+
 /**
  * @brief This function will be called by a thread immediately after it starts
  * execution. That means this function will be called at the beginning of a thread
@@ -117,6 +130,9 @@ bool checkAvailability(int request[])
 int rm_thread_started(int tid)
 {
     int ret = 0;
+    printf("rm_thread_started tid: %d\n", tid);
+    fflush(stdout);
+    tids[tid] = pthread_self();
     return (ret);
 }
 
@@ -146,7 +162,7 @@ int rm_thread_ended()
  */
 int rm_claim(int claim[])
 {
-    long tid = (long)pthread_self();
+    int tid = get_tid(pthread_self());
     for (int i = 0; i < MAXR; i++)
     {
         if (claim[i] > ExistingRes[i])
@@ -243,7 +259,7 @@ int rm_init(int p_count, int r_count, int r_exist[], int avoid)
  */
 int rm_request(int request[])
 {
-    long tid = (long)pthread_self();
+    int tid = get_tid(pthread_self());
 
     // ERROR IF REQUEST > MAX NEED
     for (int i = 0; i < M; i++)
@@ -330,7 +346,7 @@ int rm_request(int request[])
  */
 int rm_release(int release[])
 {
-    long tid = (long)pthread_self();
+    int tid = get_tid(pthread_self());
 
     // Check error condition
     for (int i = 0; i < M; i++)
