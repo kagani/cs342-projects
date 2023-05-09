@@ -136,12 +136,12 @@ int main(int argc, char **argv)
     while (count < 10)
     {
         sleep(1);
-        rm_print_state("The current state");
+        //rm_print_state("The current state");
         ret = rm_detection();
         if (ret > 0)
         {
             printf("deadlock detected, count=%d\n", ret);
-            rm_print_state("state after deadlock");
+            //rm_print_state("state after deadlock");
         }
         count++;
     }
@@ -152,6 +152,7 @@ int main(int argc, char **argv)
         {
             pthread_join(threadArray[i], NULL);
             printf("joined\n");
+            fflush(0);
         }
     }
 }

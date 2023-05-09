@@ -23,23 +23,40 @@ int ExistingRes[MAXR]; // Existing resources vector
 int **maxDemand;
 int **allocation;
 int **need;
+int **requests;
 int *available;
 
 pthread_mutex_t mutex;
 pthread_cond_t *cvs;
 pthread_t tids[MAXP];
 
-// end of global variables
+// Print a matrix in desired format
 void printMat(int **mat, int n, int m)
 {
+    printf("\t");
+    for (int i = 0; i < m; i++) {
+        printf("R%d ", i);
+    }
     for (int i = 0; i < n; i++)
     {
-        printf("\n");
+        printf("\nT%d:\t", i);
         for (int j = 0; j < m; j++)
         {
             printf("%d ", mat[i][j]);
         }
-        printf("\n");
+    }
+}
+
+// Print an array in desired format
+void printArr(int* arr, int n) {
+    printf("\t");
+    for(int i = 0; i < n; i++) {
+        printf("R%d ", i);
+    }
+    printf("\n");
+    printf("\t");
+    for(int i = 0; i < n; i++) {
+        printf("%d ", arr[i]);
     }
 }
 
@@ -52,6 +69,15 @@ bool arrLessThan(int *arr1, int *arr2, int N)
         {
             return false;
         }
+    }
+    return true;
+}
+
+// Return true if all elements of an array are 0, false otherwise
+bool checkAllZero(int* arr, int N) {
+    for(int i = 0; i < N; i++) {
+        if(arr[i] != 0)
+            return false;
     }
     return true;
 }
@@ -222,17 +248,20 @@ int rm_init(int p_count, int r_count, int r_exist[], int avoid)
     maxDemand = (int **)malloc(sizeof(int *) * N);
     allocation = (int **)malloc(sizeof(int *) * N);
     need = (int **)malloc(sizeof(int *) * N);
+    requests = (int **)malloc(sizeof(int *) * N);
 
     for (int i = 0; i < N; i++)
     {
         maxDemand[i] = (int *)malloc(sizeof(int) * M);
         allocation[i] = (int *)malloc(sizeof(int) * M);
         need[i] = (int *)malloc(sizeof(int) * M);
+        requests[i] = (int *)malloc(sizeof(int) * M);
         for (int j = 0; j < M; j++)
         {
             maxDemand[i][j] = 0;
             allocation[i][j] = 0;
             need[i][j] = 0;
+            requests[i][j] = 0;
         }
     }
 
@@ -271,6 +300,11 @@ int rm_request(int request[])
     bool avail = true;
 
     pthread_mutex_lock(&mutex);
+
+    // Set the requests of the current thread
+    for (int i = 0; i < M; i++) {
+        requests[tid][i] = request[i];
+    }
 
     // Wait if requested resources are not available
     while (!checkAvailability(request))
@@ -318,6 +352,11 @@ int rm_request(int request[])
             available = newAvailable;
             need = newNeed;
             allocation = newAllocation;
+
+            // Remove the requests of the current thread
+            for (int i = 0; i < M; i++) {
+                requests[tid][i] = 0;
+            }
             pthread_mutex_unlock(&mutex);
             return 0;
         }
@@ -325,6 +364,11 @@ int rm_request(int request[])
         {
             pthread_cond_wait(&cvs[tid], &mutex);
         }
+    }
+
+    // Remove the requests of the current thread
+    for (int i = 0; i < M; i++) {
+        requests[tid][i] = 0;
     }
     pthread_mutex_unlock(&mutex);
     return 0;
@@ -403,9 +447,39 @@ int rm_release(int release[])
  */
 int rm_detection()
 {
-    int ret = 0;
-
-    return (ret);
+    int count = 0;
+    int work[M];
+    bool finish[N];
+    bool visited[N];
+    for(int i = 0; i < M; i++) {
+        work[i] = available[i];
+    }
+    for(int i = 0; i < N; i++) {
+        if(!checkAllZero(requests[i], N)) {
+            finish[i] = false;
+        } else {
+            finish[i] = true;
+        }
+    }
+    int x = -1;
+    while(1) {
+        x = -1;
+        for(int i = 0; i < N; i++) {
+            if(!finish[i] && arrLessThan(requests[i], work, M)) {
+                x = i;
+                break;
+            }
+        }
+        if(x==-1) {
+            break;
+        }
+        for(int i = 0; i < M; i++) {
+            work[i] += allocation[x][i];
+        }
+    }
+    if(!finish[x])
+        count++;
+    return(count);
 }
 
 /**
@@ -422,5 +496,19 @@ int rm_detection()
  */
 void rm_print_state(char hmsg[])
 {
+    printf("\n##########################\n%s\n###########################\n", hmsg);
+    printf("Exist:\n");
+    printArr(ExistingRes, M);
+    printf("\n\nAvailable:\n");
+    printArr(available, M);
+    printf("\n\nAllocation:\n");
+    printMat(allocation, N, M);
+    printf("\n\nRequest:\n");
+    printMat(requests, N, M);
+    printf("\n\nMaxDemand:\n");
+    printMat(maxDemand, N, M);
+    printf("\n\nNeed:\n");
+    printMat(need, N, M);
+    printf("\n##########################");
     return;
 }
