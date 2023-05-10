@@ -25,6 +25,7 @@ int **allocation;
 int **need;
 int **requests;
 int *available;
+int tcount;
 
 pthread_mutex_t mutex;
 pthread_cond_t *cvs;
@@ -160,6 +161,7 @@ int get_tid(pthread_t self_tid) {
  */
 int rm_thread_started(int tid)
 {
+    tcount++;
     int ret = 0;
     tids[tid] = pthread_self();
     return(ret);
@@ -172,6 +174,14 @@ int rm_thread_started(int tid)
  */
 int rm_thread_ended()
 {
+    tcount--;
+    if(tcount == 0) {
+        free(available);
+        for (int i = 0; i < N; i++) {
+            free(allocation[i]);
+            free(need[i]);
+        }
+    }
     printf("\nThread %d ended.\n", get_tid(pthread_self()));
     int ret = 0;
     return (ret);
@@ -349,22 +359,16 @@ int rm_request(int request[])
                 }
             }
         }
-        printf("\n\n");
-        printArr(newAvailable, M);
-        printf("\n\n");
-        printMat(newAllocation, N, M);
-        printf("\n\n");
-        printMat(newNeed, N, M);
-        printf("\n\n");
-        if (checkSafe(newAvailable, newNeed, newAllocation))
+
+        if (DA==0 || checkSafe(newAvailable, newNeed, newAllocation))
         {
             printf("\nnew state is safe for thread %d:)\n", tid);
             fflush(0);
-            //free(available);
+            free(available);
             for (int i = 0; i < N; i++)
             {
-                //free(allocation[i]);
-                //free(need[i]);
+                free(allocation[i]);
+                free(need[i]);
             }
             available = newAvailable;
             need = newNeed;
@@ -445,11 +449,11 @@ int rm_release(int release[])
             }
         }
     }
-    //free(available);
+    free(available);
     for (int i = 0; i < N; i++)
     {
-        //free(allocation[i]);
-        //free(need[i]);
+        free(allocation[i]);
+        free(need[i]);
     }
     available = newAvailable;
     need = newNeed;
@@ -457,7 +461,6 @@ int rm_release(int release[])
 
     // wake up waiting threads
     for(int i = 0; i < N; i++) {
-        printf("\n waking up\n");
         pthread_cond_signal(&cvs[i]);
     }
 
