@@ -16,14 +16,20 @@ void pr(int tid, char astr[], int m, int r[])
 {
     int i;
     printf("thread %d, %s, [", tid, astr);
+    fflush(0);
     for (i = 0; i < m; ++i)
     {
-        if (i == (m - 1))
+        if (i == (m - 1)) {
             printf("%d", r[i]);
-        else
+            fflush(0);
+        }
+        else {
             printf("%d,", r[i]);
+            fflush(0);
+        }
     }
     printf("]\n");
+    fflush(0);
 }
 
 void setarray(int r[MAXR], int m, ...)
@@ -55,12 +61,13 @@ void *threadfunc1(void *a)
 
     setarray(request1, NUMR, 5);
     pr(tid, "REQ", NUMR, request1);
+    fflush(0);
     rm_request(request1);
-
     sleep(4);
 
     setarray(request2, NUMR, 3);
     pr(tid, "REQ", NUMR, request2);
+    fflush(0);
     rm_request(request2);
 
     rm_release(request1);
@@ -85,12 +92,14 @@ void *threadfunc2(void *a)
 
     setarray(request1, NUMR, 2);
     pr(tid, "REQ", NUMR, request1);
+    fflush(0);
     rm_request(request1);
 
     sleep(2);
 
     setarray(request2, NUMR, 4);
     pr(tid, "REQ", NUMR, request2);
+    fflush(0);
     rm_request(request2);
 
     rm_release(request1);
@@ -140,7 +149,7 @@ int main(int argc, char **argv)
         ret = rm_detection();
         if (ret > 0)
         {
-            printf("deadlock detected, count=%d\n", ret);
+            //printf("deadlock detected, count=%d\n", ret);
             //rm_print_state("state after deadlock");
         }
         count++;
