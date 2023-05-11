@@ -318,27 +318,27 @@ int rm_request(int request[]) {
                 }
             }
         }
-        while (DA == 1 && !checkSafe(newAvailable, newNeed, newAllocation)) {
+        if (DA == 0 || checkSafe(newAvailable, newNeed, newAllocation)) {
+            printf("\nnew state is safe for thread %d:)\n", tid);
+            fflush(0);
+            free(available);
+            for (int i = 0; i < N; i++) {
+                free(allocation[i]);
+                free(need[i]);
+            }
+            available = newAvailable;
+            need = newNeed;
+            allocation = newAllocation;
+            // Remove the requests of the current thread
+            for (int i = 0; i < M; i++) {
+                requests[tid][i] = 0;
+            }
+            pthread_mutex_unlock(&mutex);
+            return 0;
+        } else {
             printf("\nnew state is unsafe for thread %d >:(\n", tid);
             pthread_cond_wait(&cvs[tid], &mutex);
         }
-        printf("\nnew state is safe for thread %d:)\n", tid);
-        fflush(0);
-        free(available);
-        for (int i = 0; i < N; i++) {
-            free(allocation[i]);
-            free(need[i]);
-        }
-        available = newAvailable;
-        need = newNeed;
-        allocation = newAllocation;
-
-        // Remove the requests of the current thread
-        for (int i = 0; i < M; i++) {
-            requests[tid][i] = 0;
-        }
-        pthread_mutex_unlock(&mutex);
-        return 0;
     }
 
     // Remove the requests of the current thread
