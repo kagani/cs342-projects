@@ -10,7 +10,7 @@
 #define NUMR 6  // number of resource types
 #define NUMP 5  // number of threads
 
-int exist[6] = {1, 2, 3, 4, 5, 6};  // resources existing in the system
+int exist[6] = {1, 1, 1, 1, 1, 1};  // resources existing in the system
 
 int AVOID = 1;
 
@@ -52,24 +52,31 @@ void *worker(void *a) {
     tid = *((int *)a);
     rm_thread_started(tid);
 
-    setarray(claim, NUMR, 1, 2, 3, 4, 5, 6);
+    setarray(claim, NUMR, 0, 0, 0, 0, 0, 0);  // init to 0
+
+    for (int i = 0; i < NUMP - 1; i++) {  // claim own resource
+        if (i == tid) {
+            claim[i] = 1;
+            break;
+        }
+    }
+
+    if (tid == NUMP - 1) {  // claim all resources for last thread
+        setarray(claim, NUMR, 1, 1, 1, 1, 1, 1);
+    }
+
     rm_claim(claim);
 
-    setarray(request1, NUMR, 1, 2, 3, 4, 5, 6);
-    pr(tid, "REQ", NUMR, request1);
+    pr(tid, "REQ", NUMR, claim);
     fflush(0);
-    rm_request(request1);
+    rm_request(claim);
+
     sleep(4);
 
-    setarray(request2, NUMR, 0, 1, 2, 3, 4, 5);
-    pr(tid, "REQ", NUMR, request2);
-    fflush(0);
-    rm_request(request2);
-
-    rm_release(request1);
-    rm_release(request2);
+    rm_release(claim);
 
     rm_thread_ended();
+    printf("thread %d ended\n", tid);
     pthread_exit(NULL);
 }
 
@@ -125,12 +132,12 @@ void deadlock_avoid() {
         if (ret > 0) {
             printf("deadlock detected, count=%d\n", ret);  // Should not happen
             rm_print_state("state after deadlock");
-            sleep(100);
         }
     }
 
     for (int i = 0; i < NUMP; i++) {
         pthread_join(threadArray[i], NULL);
+        printf("thread %d joined\n", i);
     }
 }
 
