@@ -1,29 +1,27 @@
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "rm.h"
 
-#define NUMR 1 // number of resource types
-#define NUMP 2 // number of threads
+#define NUMR 1  // number of resource types
+#define NUMP 2  // number of threads
 
 int AVOID = 1;
-int exist[1] = {8}; // resources existing in the system
+int exist[1] = {8};  // resources existing in the system
 
-void pr(int tid, char astr[], int m, int r[])
-{
+void pr(int tid, char astr[], int m, int r[]) {
     int i;
     printf("thread %d, %s, [", tid, astr);
     fflush(0);
-    for (i = 0; i < m; ++i)
-    {
+    for (i = 0; i < m; ++i) {
         if (i == (m - 1)) {
             printf("%d", r[i]);
             fflush(0);
-        }
-        else {
+        } else {
             printf("%d,", r[i]);
             fflush(0);
         }
@@ -32,22 +30,19 @@ void pr(int tid, char astr[], int m, int r[])
     fflush(0);
 }
 
-void setarray(int r[MAXR], int m, ...)
-{
+void setarray(int r[MAXR], int m, ...) {
     va_list valist;
     int i;
 
     va_start(valist, m);
-    for (i = 0; i < m; i++)
-    {
+    for (i = 0; i < m; i++) {
         r[i] = va_arg(valist, int);
     }
     va_end(valist);
     return;
 }
 
-void *threadfunc1(void *a)
-{
+void *threadfunc1(void *a) {
     int tid;
     int request1[MAXR];
     int request2[MAXR];
@@ -77,8 +72,7 @@ void *threadfunc1(void *a)
     pthread_exit(NULL);
 }
 
-void *threadfunc2(void *a)
-{
+void *threadfunc2(void *a) {
     int tid;
     int request1[MAXR];
     int request2[MAXR];
@@ -109,16 +103,14 @@ void *threadfunc2(void *a)
     pthread_exit(NULL);
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     int i;
     int tids[NUMP];
     pthread_t threadArray[NUMP];
     int count;
     int ret;
 
-    if (argc != 2)
-    {
+    if (argc != 2) {
         printf("usage: ./app avoidflag\n");
         exit(1);
     }
@@ -130,35 +122,31 @@ int main(int argc, char **argv)
     else
         rm_init(NUMP, NUMR, exist, 0);
 
-    i = 0; // we select a tid for the thread
+    i = 0;  // we select a tid for the thread
     tids[i] = i;
 
-    pthread_create(&(threadArray[i]), NULL,
-                   (void *)threadfunc1, (void *)(void *)&tids[i]);
+    pthread_create(&(threadArray[i]), NULL, (void *)threadfunc1,
+                   (void *)(void *)&tids[i]);
 
-    i = 1; // we select a tid for the thread
+    i = 1;  // we select a tid for the thread
     tids[i] = i;
-    pthread_create(&(threadArray[i]), NULL,
-                   (void *)threadfunc2, (void *)(void *)&tids[i]);
+    pthread_create(&(threadArray[i]), NULL, (void *)threadfunc2,
+                   (void *)(void *)&tids[i]);
 
     count = 0;
-    while (count < 10)
-    {
+    while (count < 10) {
         sleep(1);
         // rm_print_state("The current state");
         ret = rm_detection();
-        if (ret > 0)
-        {
+        if (ret > 0) {
             printf("deadlock detected, count=%d\n", ret);
             // rm_print_state("state after deadlock");
         }
         count++;
     }
 
-    if (ret == 0)
-    {
-        for (i = 0; i < NUMP; ++i)
-        {
+    if (ret == 0) {
+        for (i = 0; i < NUMP; ++i) {
             pthread_join(threadArray[i], NULL);
             printf("joined\n");
             fflush(0);
