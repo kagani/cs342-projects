@@ -422,17 +422,20 @@ int rm_detection() {
     int count = 0;
     int work[M];  // available
     bool finish[N];
-    bool visited[N];
     for (int i = 0; i < M; i++) {
         work[i] = available[i];
     }
     for (int i = 0; i < N; i++) {
         finish[i] = checkAllZero(requests[i], M);
-        printf("\nfinish[%d] = %d\n", i, finish[i]);  // DELETE
-        fflush(stdout);
-        if (finish[i]) {  // DELETE
-            printf("thread %d is finished\n", i);
-            fflush(stdout);
+    }
+
+    for (int i = 0; i < N; i++) {
+        if (!finish[i]) {
+            continue;
+        }
+
+        for (int j = 0; j < M; j++) {
+            work[j] += allocation[i][j];
         }
     }
 
@@ -454,8 +457,10 @@ int rm_detection() {
 
         finish[x] = true;
     }
-    for (int i = 0; i < M; i++)
-        if (!finish[i]) count++;
+    for (int i = 0; i < N; i++)
+        if (!finish[i]) {
+            count++;
+        }
     return count;
 }
 
