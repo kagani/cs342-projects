@@ -16,18 +16,13 @@ int exist[1] = {8};  // resources existing in the system
 void pr(int tid, char astr[], int m, int r[]) {
     int i;
     printf("thread %d, %s, [", tid, astr);
-    fflush(0);
     for (i = 0; i < m; ++i) {
-        if (i == (m - 1)) {
+        if (i == (m - 1))
             printf("%d", r[i]);
-            fflush(0);
-        } else {
+        else
             printf("%d,", r[i]);
-            fflush(0);
-        }
     }
     printf("]\n");
-    fflush(0);
 }
 
 void setarray(int r[MAXR], int m, ...) {
@@ -56,13 +51,12 @@ void *threadfunc1(void *a) {
 
     setarray(request1, NUMR, 5);
     pr(tid, "REQ", NUMR, request1);
-    fflush(0);
     rm_request(request1);
+
     sleep(4);
 
     setarray(request2, NUMR, 3);
     pr(tid, "REQ", NUMR, request2);
-    fflush(0);
     rm_request(request2);
 
     rm_release(request1);
@@ -86,14 +80,12 @@ void *threadfunc2(void *a) {
 
     setarray(request1, NUMR, 2);
     pr(tid, "REQ", NUMR, request1);
-    fflush(0);
     rm_request(request1);
 
     sleep(2);
 
     setarray(request2, NUMR, 4);
     pr(tid, "REQ", NUMR, request2);
-    fflush(0);
     rm_request(request2);
 
     rm_release(request1);
@@ -124,7 +116,6 @@ int main(int argc, char **argv) {
 
     i = 0;  // we select a tid for the thread
     tids[i] = i;
-
     pthread_create(&(threadArray[i]), NULL, (void *)threadfunc1,
                    (void *)(void *)&tids[i]);
 
@@ -149,7 +140,6 @@ int main(int argc, char **argv) {
         for (i = 0; i < NUMP; ++i) {
             pthread_join(threadArray[i], NULL);
             printf("joined\n");
-            fflush(0);
         }
     }
 }
