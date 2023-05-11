@@ -174,14 +174,14 @@ int rm_thread_started(int tid)
  */
 int rm_thread_ended()
 {
-    tcount--;
+    tcount--;/*
     if(tcount == 0) {
         free(available);
         for (int i = 0; i < N; i++) {
             free(allocation[i]);
             free(need[i]);
         }
-    }
+    }*/
     printf("\nThread %d ended.\n", get_tid(pthread_self()));
     int ret = 0;
     return (ret);
