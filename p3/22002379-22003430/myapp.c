@@ -70,6 +70,7 @@ void *worker(void *a) {
     pr(tid, "REQ", NUMR, claim);
     fflush(0);
     rm_request(claim);
+
     sleep(4);
 
     rm_release(claim);
@@ -126,7 +127,7 @@ void deadlock_avoid() {
 
     for (int i = 0; i < 10; i++) {
         sleep(1);
-        // rm_print_state("The current state");
+        rm_print_state("The current state");
         int ret = rm_detection();
         if (ret > 0) {
             printf("deadlock detected, count=%d\n", ret);  // Should not happen

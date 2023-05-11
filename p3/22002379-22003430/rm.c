@@ -273,13 +273,20 @@ int rm_init(int p_count, int r_count, int r_exist[], int avoid) {
  */
 int rm_request(int request[]) {
     int tid = get_tid(pthread_self());
-    // printf("\nrequesting thread: %d\n", tid);
-    fflush(0);
 
     pthread_mutex_lock(&mutex);
     // ERROR IF REQUEST > MAX NEED
     for (int i = 0; i < M; i++) {
         if (request[i] > need[tid][i]) {
+            pthread_mutex_unlock(&mutex);
+            return -1;
+        }
+    }
+
+    // Check if request > exists
+    for (int i = 0; i < M; i++) {
+        if (request[i] > ExistingRes[i]) {
+            pthread_mutex_unlock(&mutex);
             return -1;
         }
     }
@@ -289,62 +296,36 @@ int rm_request(int request[]) {
         requests[tid][i] = request[i];
     }
 
-    // Wait if requested resources are not available
-    while (!checkAvailability(request)) {
-        printf("\nnot available for thread: %d", tid);
-        fflush(0);
+    pthread_mutex_unlock(&mutex);
+
+    // Check if the new state is available
+    while (DA == 0 && !checkAvailability(request)) {
+        printf("Unavailable resources for thread %d\n", tid);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
 
-    // Check if the new state is safe
-    while (1) {
-        // Compute the new state
-        int* newAvailable = (int*)malloc(sizeof(int) * M);
-        int** newAllocation = (int**)malloc(sizeof(int*) * N);
-        int** newNeed = (int**)malloc(sizeof(int*) * N);
-        for (int i = 0; i < M; i++) {
-            newAvailable[i] = available[i] - request[i];
-        }
-        for (int i = 0; i < N; i++) {
-            newAllocation[i] = (int*)malloc(sizeof(int) * M);
-            newNeed[i] = (int*)malloc(sizeof(int) * M);
-            for (int j = 0; j < M; j++) {
-                if (i == tid) {
-                    newAllocation[i][j] = allocation[i][j] + request[j];
-                    newNeed[i][j] = need[i][j] - request[j];
-                } else {
-                    newAllocation[i][j] = allocation[i][j];
-                    newNeed[i][j] = need[i][j];
-                }
-            }
-        }
-        if (DA == 0 || checkSafe(newAvailable, newNeed, newAllocation)) {
-            printf("\nnew state is safe for thread %d:)\n", tid);
-            fflush(0);
-            free(available);
-            for (int i = 0; i < N; i++) {
-                free(allocation[i]);
-                free(need[i]);
-            }
-            available = newAvailable;
-            need = newNeed;
-            allocation = newAllocation;
-            // Remove the requests of the current thread
-            for (int i = 0; i < M; i++) {
-                requests[tid][i] = 0;
-            }
-            pthread_mutex_unlock(&mutex);
-            return 0;
-        } else {
-            printf("\nnew state is unsafe for thread %d >:(\n", tid);
-            pthread_cond_wait(&cvs[tid], &mutex);
-        }
+    // Check if the new state is available and safe
+    while (DA == 1 && !checkSafe(available, need, allocation) &&
+           !checkAvailability(request)) {
+        printf("\nnew state is unsafe for thread %d >:(\n", tid);
+        pthread_cond_wait(&cvs[tid], &mutex);
+    }
+
+    // Safe if reached here
+    printf("\nnew state is safe for thread %d:)\n", tid);
+
+    // Granting the request
+    for (int i = 0; i < M; i++) {
+        available[i] -= request[i];
+        allocation[tid][i] += request[i];
+        need[tid][i] -= request[i];
     }
 
     // Remove the requests of the current thread
     for (int i = 0; i < M; i++) {
         requests[tid][i] = 0;
     }
+
     pthread_mutex_unlock(&mutex);
     return 0;
 }
@@ -372,43 +353,25 @@ int rm_release(
         if (release[i] > allocation[tid][i]) return -1;
     }
 
-    // Set the new matrices & vectors
-    int* newAvailable = (int*)malloc(sizeof(int) * M);
-    int** newAllocation = (int**)malloc(sizeof(int*) * N);
-    int** newNeed = (int**)malloc(sizeof(int*) * N);
-
     pthread_mutex_lock(&mutex);
     for (int i = 0; i < M; i++) {
-        newAvailable[i] = available[i] + release[i];
+        available[i] += release[i];
     }
     for (int i = 0; i < N; i++) {
-        newAllocation[i] = (int*)malloc(sizeof(int) * M);
-        newNeed[i] = (int*)malloc(sizeof(int) * M);
         for (int j = 0; j < M; j++) {
             if (i == tid) {
-                newAllocation[i][j] = allocation[i][j] - release[i];
-                newNeed[i][j] = need[i][j] + release[i];
-            } else {
-                newAllocation[i][j] = allocation[i][j];
-                newNeed[i][j] = need[i][j];
+                allocation[i][j] -= release[i];
+                need[i][j] += release[i];
             }
         }
     }
-    free(available);
-    for (int i = 0; i < N; i++) {
-        free(allocation[i]);
-        free(need[i]);
-    }
-    available = newAvailable;
-    need = newNeed;
-    allocation = newAllocation;
+    pthread_mutex_unlock(&mutex);
 
     // wake up waiting threads
     for (int i = 0; i < N; i++) {
         pthread_cond_signal(&cvs[i]);
     }
 
-    pthread_mutex_unlock(&mutex);
     return 0;
 }
 
