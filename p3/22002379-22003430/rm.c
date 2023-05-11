@@ -363,7 +363,8 @@ int rm_request(int request[]) {
  * @return 0 upon success. -1 in case of an error condition, for example,
  * when trying to release more instances than allocated.
  */
-int rm_release(int release[]) {
+int rm_release(
+    int release[]) {  // TODO INCREASE RESOURCES NOT TOTALLY DESTROY THEM (FREE)
     int tid = get_tid(pthread_self());
 
     // Check error condition
