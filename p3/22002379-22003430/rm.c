@@ -159,7 +159,7 @@ int rm_thread_ended() {
              free(need[i]);
          }
      }*/
-    printf("\nThread %d ended.\n", get_tid(pthread_self()));
+    // printf("\nThread %d ended.\n", get_tid(pthread_self()));
     int ret = 0;
     return (ret);
 }
@@ -291,7 +291,7 @@ int rm_request(int request[]) {
 
     // Wait if requested resources are not available
     while (!checkAvailability(request)) {
-        printf("\nnot available for thread: %d", tid);
+        // printf("\nnot available for thread: %d", tid);
         fflush(0);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
@@ -319,8 +319,8 @@ int rm_request(int request[]) {
             }
         }
         if (DA == 0 || checkSafe(newAvailable, newNeed, newAllocation)) {
-            printf("\nnew state is safe for thread %d:)\n", tid);
-            fflush(0);
+            // printf("\nnew state is safe for thread %d:)\n", tid);
+            // fflush(0);
             free(available);
             for (int i = 0; i < N; i++) {
                 free(allocation[i]);
@@ -336,7 +336,7 @@ int rm_request(int request[]) {
             pthread_mutex_unlock(&mutex);
             return 0;
         } else {
-            printf("\nnew state is unsafe for thread %d >:(\n", tid);
+            // printf("\nnew state is unsafe for thread %d >:(\n", tid);
             pthread_cond_wait(&cvs[tid], &mutex);
         }
     }
