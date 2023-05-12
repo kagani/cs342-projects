@@ -10,7 +10,7 @@
 #define NUMR 5  // number of resource types
 #define NUMP 3  // number of threads
 
-int exist[5] = {1, 1, 1, 1, 1};  // resources existing in the system
+int exist[5] = {7, 2, 6, 1, 1};  // resources existing in the system
 
 int AVOID = 1;
 
@@ -53,26 +53,27 @@ void *worker1(void *a) {
     tid = *((int *)a);
     rm_thread_started(tid);
 
-    setarray(claim, NUMR, 1, 1, 1, 1, 1);
+    setarray(claim, NUMR, 7, 2, 6, 1, 1);
     rm_claim(claim);
 
-    setarray(request1, NUMR, 1, 0, 0, 0, 0);
+    setarray(request1, NUMR, 2, 2, 3, 1, 1);
     pr(tid, "REQ", NUMR, request1);
     fflush(0);
-    rm_request(claim);
+    rm_request(request1);
 
-    setarray(request2, NUMR, 0, 1, 0, 0, 0, 0);
+    sleep(4);
+
+    setarray(request2, NUMR, 1, 0, 2, 0, 0);
     pr(tid, "REQ", NUMR, request2);
     fflush(0);
     rm_request(request2);
-    sleep(4);
 
     setarray(request3, NUMR, 0, 0, 1, 1, 1);
     pr(tid, "REQ", NUMR, request3);
     fflush(0);
     rm_request(request3);
 
-    sleep(4);
+    sleep(16);
 
     rm_release(request1);
     rm_release(request2);
@@ -92,27 +93,27 @@ void *worker2(void *a) {
     tid = *((int *)a);
     rm_thread_started(tid);
 
-    setarray(claim, NUMR, 1, 1, 1, 1, 1);
+    setarray(claim, NUMR, 7, 2, 6, 1, 1);
     rm_claim(claim);
 
-    setarray(request1, NUMR, 0, 1, 0, 0, 0);
+    setarray(request1, NUMR, 2, 0, 0, 0, 0);
     pr(tid, "REQ", NUMR, request1);
     fflush(0);
     rm_request(request1);
+
     sleep(4);
 
-    setarray(request2, NUMR, 0, 0, 1, 0, 0);
+    setarray(request2, NUMR, 2, 0, 2, 0, 0);
     pr(tid, "REQ", NUMR, request2);
     fflush(0);
     rm_request(request2);
-    sleep(4);
 
     setarray(request3, NUMR, 0, 0, 0, 1, 1);
     pr(tid, "REQ", NUMR, request3);
     fflush(0);
     rm_request(request3);
 
-    sleep(4);
+    sleep(8);
 
     rm_release(request1);
     rm_release(request2);
@@ -132,27 +133,26 @@ void *worker3(void *a) {
     tid = *((int *)a);
     rm_thread_started(tid);
 
-    setarray(claim, NUMR, 1, 1, 1, 1, 1);
+    setarray(claim, NUMR, 7, 2, 6, 1, 1);
     rm_claim(claim);
 
-    setarray(request1, NUMR, 0, 0, 1, 0, 0);
+    setarray(request1, NUMR, 3, 0, 3, 0, 0);
     pr(tid, "REQ", NUMR, request1);
     fflush(0);
     rm_request(request1);
+
     sleep(4);
 
-    setarray(request2, NUMR, 1, 0, 0, 0, 0);
+    setarray(request2, NUMR, 0, 0, 1, 0, 0);
     pr(tid, "REQ", NUMR, request2);
     fflush(0);
     rm_request(request2);
-    sleep(4);
-
-    setarray(request3, NUMR, 0, 0, 0, 1, 1);
+    setarray(request3, NUMR, 2, 0, 0, 1, 1);
     pr(tid, "REQ", NUMR, request3);
     fflush(0);
     rm_request(request3);
 
-    sleep(4);
+    sleep(8);
 
     rm_release(request1);
     rm_release(request2);
