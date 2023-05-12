@@ -31,6 +31,19 @@ pthread_mutex_t mutex;
 pthread_cond_t* cvs;
 pthread_t tids[MAXP];
 
+/**
+ * @brief Get the tid from self
+ *
+ * @param self_tid
+ * @return int
+ */
+int get_tid(pthread_t self_tid) {
+    for (int i = 0; i < MAXP; i++) {
+        if (tids[i] == self_tid) return i;
+    }
+    return -1;
+}
+
 // Print a matrix in desired format
 void printMat(int** mat, int n, int m) {
     printf("\t");
@@ -81,49 +94,34 @@ bool checkAllZero(int* arr, int N) {
 }
 
 // Check if the current state is safe
-bool checkSafe(int* available, int** need, int** allocation) {
-    int work[M];
-    bool finish[N];
-    for (int i = 0; i < M; i++) work[i] = available[i];
-    for (int i = 0; i < N; i++) finish[i] = 0;
+bool is_state_safe(int* request) {
+    // Presudo allocate resource
+    for (int i = 0; i < M; i++) {
+        available[i] -= request[i];
+        allocation[get_tid(pthread_self())][i] += request[i];
+        need[get_tid(pthread_self())][i] -= request[i];
+    }
 
-    while (1) {
-        int x = -1;
-        for (int i = 0; i < N; i++) {
-            if (!finish[i] && arrLessThan(need[i], work, M)) {
-                x = i;
-                break;
-            }
-        }
-        if (x == -1)
-            break;
-        else {
-            for (int i = 0; i < M; i++) {
-                work[i] += allocation[x][i];
-                finish[x] = true;
-            }
-        }
+    // Check if the current state is safe
+    int res = rm_detection();
+
+    // Undo the allocation
+    for (int i = 0; i < M; i++) {
+        available[i] += request[i];
+        allocation[get_tid(pthread_self())][i] -= request[i];
+        need[get_tid(pthread_self())][i] += request[i];
     }
-    for (int i = 0; i < N; i++) {
-        if (!finish[i]) return false;
-    }
-    return true;
+
+    return res == 0;
 }
 
-bool checkAvailability(int request[]) {
+bool is_available(int request[]) {
     for (int i = 0; i < M; i++) {
         if (request[i] > available[i]) {
             return false;
         }
     }
     return true;
-}
-
-int get_tid(pthread_t self_tid) {
-    for (int i = 0; i < MAXP; i++) {
-        if (tids[i] == self_tid) return i;
-    }
-    return -1;
 }
 
 /**
@@ -140,9 +138,8 @@ int get_tid(pthread_t self_tid) {
  */
 int rm_thread_started(int tid) {
     tcount++;
-    int ret = 0;
     tids[tid] = pthread_self();
-    return (ret);
+    return 0;
 }
 
 /**
@@ -151,17 +148,27 @@ int rm_thread_started(int tid) {
  * @return 0 upon success, -1 upon failure.
  */
 int rm_thread_ended() {
-    tcount--; /*
-     if(tcount == 0) {
-         free(available);
-         for (int i = 0; i < N; i++) {
-             free(allocation[i]);
-             free(need[i]);
-         }
-     }*/
+    tcount--;
     printf("\nThread %d ended.\n", get_tid(pthread_self()));
-    int ret = 0;
-    return (ret);
+    if (tcount == 0) {
+        printf("All threads ended. Deallocating everything\n");
+        for (int i = 0; i < N; i++) {
+            free(maxDemand[i]);
+            free(allocation[i]);
+            free(need[i]);
+            free(requests[i]);
+        }
+
+        free(maxDemand);
+        free(allocation);
+        free(need);
+        free(requests);
+        free(available);
+        free(cvs);
+        pthread_mutex_destroy(&mutex);
+    }
+
+    return 0;
 }
 
 /**
@@ -206,10 +213,7 @@ int rm_claim(int claim[]) {
  * if any specified value is negative, etc.
  */
 int rm_init(int p_count, int r_count, int r_exist[], int avoid) {
-    if (p_count > MAXP || r_count > MAXR) return -1;
-
-    int i;
-    int ret = 0;
+    if (p_count > MAXP || r_count > MAXR || tcount > 0) return -1;
 
     DA = avoid;
     N = p_count;
@@ -224,7 +228,7 @@ int rm_init(int p_count, int r_count, int r_exist[], int avoid) {
     for (int i = 0; i < N; i++) pthread_cond_init(&cvs[i], NULL);
 
     // initialize (create) resources
-    for (i = 0; i < M; ++i) {
+    for (int i = 0; i < M; ++i) {
         available[i] = r_exist[i];
         ExistingRes[i] = r_exist[i];
     }
@@ -247,8 +251,9 @@ int rm_init(int p_count, int r_count, int r_exist[], int avoid) {
             requests[i][j] = 0;
         }
     }
+
     printf("\ninitialization completed.\n");
-    return (ret);
+    return 0;
 }
 
 /**
@@ -296,17 +301,14 @@ int rm_request(int request[]) {
         requests[tid][i] = request[i];
     }
 
-    pthread_mutex_unlock(&mutex);
-
     // Check if the new state is available
-    while (DA == 0 && !checkAvailability(request)) {
+    while (DA == 0 && !is_available(request)) {
         printf("Unavailable resources for thread %d\n", tid);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
 
     // Check if the new state is available and safe
-    while (DA == 1 && !checkSafe(available, need, allocation) &&
-           !checkAvailability(request)) {
+    while (DA == 1 && !is_state_safe(request) && !is_available(request)) {
         printf("\nnew state is unsafe for thread %d >:(\n", tid);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
@@ -315,11 +317,23 @@ int rm_request(int request[]) {
     printf("\nnew state is safe for thread %d:)\n", tid);
 
     // Granting the request
+    printf("Available resources before granting request: ");
+    for (int i = 0; i < M; i++) {
+        printf("%d ", available[i]);
+    }
+    printf("\n");
+
     for (int i = 0; i < M; i++) {
         available[i] -= request[i];
         allocation[tid][i] += request[i];
         need[tid][i] -= request[i];
     }
+
+    printf("Available resources after granting request: ");
+    for (int i = 0; i < M; i++) {
+        printf("%d ", available[i]);
+    }
+    printf("\n");
 
     // Remove the requests of the current thread
     for (int i = 0; i < M; i++) {
@@ -344,27 +358,22 @@ int rm_request(int request[]) {
  * @return 0 upon success. -1 in case of an error condition, for example,
  * when trying to release more instances than allocated.
  */
-int rm_release(
-    int release[]) {  // TODO INCREASE RESOURCES NOT TOTALLY DESTROY THEM (FREE)
+int rm_release(int release[]) {
     int tid = get_tid(pthread_self());
 
     // Check error condition
+    pthread_mutex_lock(&mutex);
     for (int i = 0; i < M; i++) {
-        if (release[i] > allocation[tid][i]) return -1;
+        if (release[i] > allocation[tid][i]) {
+            pthread_mutex_unlock(&mutex);
+            return -1;
+        }
     }
 
-    pthread_mutex_lock(&mutex);
     for (int i = 0; i < M; i++) {
         available[i] += release[i];
     }
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < M; j++) {
-            if (i == tid) {
-                allocation[i][j] -= release[i];
-                need[i][j] += release[i];
-            }
-        }
-    }
+
     pthread_mutex_unlock(&mutex);
 
     // wake up waiting threads
@@ -383,6 +392,8 @@ int rm_release(
  * -1 will be returned.
  */
 int rm_detection() {
+    if (tcount == 0) return 0;
+
     int count = 0;
     int work[M];  // available
     bool finish[N];
@@ -441,6 +452,11 @@ int rm_detection() {
  * beginning of the state information.
  */
 void rm_print_state(char hmsg[]) {
+    if (tcount == 0) {
+        printf("No threads are active\n");
+        return;
+    }
+
     printf("\n##########################\n%s\n###########################\n",
            hmsg);
     printf("Exist:\n");
