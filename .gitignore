@@ -52,8 +52,10 @@ Mkfile.old
 dkms.conf
 
 # Binary files
-*
-!/**/
+mps
+mps_cv
+app
+myapp
 !*.*
 test
 *.a
