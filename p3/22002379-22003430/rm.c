@@ -117,10 +117,10 @@ bool is_state_safe(int* request) {
     }
     for (int i = 0; i < N; i++) {
         if (!finish[i]) {
-            printf("Request denied. Deadlock will occur with id: %d.\n", i);
+            // printf("Request denied. Deadlock will occur with id: %d.\n", i);
             return false;
         }
-        }
+    }
 
     return true;
 }
@@ -159,9 +159,9 @@ int rm_thread_started(int tid) {
  */
 int rm_thread_ended() {
     tcount--;
-    printf("\nThread %d ended.\n", get_tid(pthread_self()));
+    // printf("\nThread %d ended.\n", get_tid(pthread_self()));
     if (tcount == 0) {
-        printf("All threads ended. Deallocating everything\n");
+        // printf("All threads ended. Deallocating everything\n");
         for (int i = 0; i < N; i++) {
             free(maxDemand[i]);
             free(allocation[i]);
@@ -267,7 +267,7 @@ int rm_init(int p_count, int r_count, int r_exist[], int avoid) {
         }
     }
 
-    printf("\ninitialization completed.\n");
+    // printf("\ninitialization completed.\n");
     return 0;
 }
 
@@ -318,25 +318,25 @@ int rm_request(int request[]) {
 
     // Check if the new state is available
     while (DA == 0 && !is_available(request)) {
-        printf("Unavailable resources for thread %d\n", tid);
+        // printf("Unavailable resources for thread %d\n", tid);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
 
     // Check if the new state is available and safe
     while (DA == 1 && !is_state_safe(request) && !is_available(request)) {
-        printf("\nnew state is unsafe for thread %d >:(\n", tid);
+        // printf("\nnew state is unsafe for thread %d >:(\n", tid);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
 
     // Safe if reached here
-    printf("\nnew state is safe for thread %d:)\n", tid);
+    // printf("\nnew state is safe for thread %d:)\n", tid);
 
     // Granting the request
-    printf("Available resources before granting request: ");
-    for (int i = 0; i < M; i++) {
-        printf("%d ", available[i]);
-    }
-    printf("\n");
+    // printf("Available resources before granting request: ");
+    // for (int i = 0; i < M; i++) {
+    //     printf("%d ", available[i]);
+    // }
+    // printf("\n");
 
     for (int i = 0; i < M; i++) {
         available[i] -= request[i];
@@ -344,11 +344,11 @@ int rm_request(int request[]) {
         need[tid][i] -= request[i];
     }
 
-    printf("Available resources after granting request: ");
-    for (int i = 0; i < M; i++) {
-        printf("%d ", available[i]);
-    }
-    printf("\n");
+    // printf("Available resources after granting request: ");
+    // for (int i = 0; i < M; i++) {
+    //     printf("%d ", available[i]);
+    // }
+    // printf("\n");
 
     // Remove the requests of the current thread
     for (int i = 0; i < M; i++) {
@@ -450,7 +450,7 @@ int rm_detection() {
     for (int i = 0; i < N; i++)
         if (!finish[i]) {
             count++;
-            printf("Deadlocked process: %d\n", i);
+            // printf("Deadlocked process: %d\n", i);
         }
     return count;
 }
