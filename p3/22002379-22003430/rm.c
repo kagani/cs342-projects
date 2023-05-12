@@ -186,13 +186,18 @@ int rm_thread_ended() {
  */
 int rm_claim(int claim[]) {
     int tid = get_tid(pthread_self());
+
+    // Check if the claim is valid
     for (int i = 0; i < M; i++) {
         if (claim[i] > ExistingRes[i]) return -1;
+    }
+
+    for (int i = 0; i < M; i++) {
         maxDemand[tid][i] = claim[i];
         need[tid][i] = claim[i];
     }
-    int ret = 0;
-    return (ret);
+
+    return 0;
 }
 
 /**
@@ -372,6 +377,8 @@ int rm_release(int release[]) {
 
     for (int i = 0; i < M; i++) {
         available[i] += release[i];
+        allocation[tid][i] -= release[i];
+        need[tid][i] += release[i];
     }
 
     pthread_mutex_unlock(&mutex);
