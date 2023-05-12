@@ -95,24 +95,34 @@ bool checkAllZero(int* arr, int N) {
 
 // Check if the current state is safe
 bool is_state_safe(int* request) {
-    // Presudo allocate resource
-    for (int i = 0; i < M; i++) {
-        available[i] -= request[i];
-        allocation[get_tid(pthread_self())][i] += request[i];
-        need[get_tid(pthread_self())][i] -= request[i];
+    int work[M];
+    bool finish[N];
+    for (int i = 0; i < M; i++) work[i] = available[i];
+    for (int i = 0; i < N; i++) finish[i] = false;
+
+    while (1) {
+        int x = -1;
+        for (int i = 0; i < N; i++) {
+            if (!finish[i] && arrLessThan(need[i], work, M)) {
+                x = i;
+                break;
+            }
+        }
+        if (x == -1) break;
+
+        for (int i = 0; i < M; i++) {
+            work[i] += allocation[x][i];
+        }
+        finish[x] = true;
     }
+    for (int i = 0; i < N; i++) {
+        if (!finish[i]) {
+            printf("Request denied. Deadlock will occur with id: %d.\n", i);
+            return false;
+        }
+        }
 
-    // Check if the current state is safe
-    int res = rm_detection();
-
-    // Undo the allocation
-    for (int i = 0; i < M; i++) {
-        available[i] += request[i];
-        allocation[get_tid(pthread_self())][i] -= request[i];
-        need[get_tid(pthread_self())][i] += request[i];
-    }
-
-    return res == 0;
+    return true;
 }
 
 bool is_available(int request[]) {
@@ -404,23 +414,18 @@ int rm_detection() {
     int count = 0;
     int work[M];  // available
     bool finish[N];
+
+    // Work = Available
     for (int i = 0; i < M; i++) {
         work[i] = available[i];
     }
+
+    // Finish = false
     for (int i = 0; i < N; i++) {
-        finish[i] = checkAllZero(requests[i], M);
+        finish[i] = false;
     }
 
-    for (int i = 0; i < N; i++) {
-        if (!finish[i]) {
-            continue;
-        }
-
-        for (int j = 0; j < M; j++) {
-            work[j] += allocation[i][j];
-        }
-    }
-
+    // Find an i such that both Finish[i] == false and Request_i <= Work
     int x = -1;
     while (1) {
         x = -1;
@@ -430,7 +435,7 @@ int rm_detection() {
                 break;
             }
         }
-        if (x == -1) {
+        if (x == -1) {  // no such i exists go to step 4
             break;
         }
         for (int i = 0; i < M; i++) {
@@ -439,9 +444,13 @@ int rm_detection() {
 
         finish[x] = true;
     }
+
+    // If Finish[i] == false for some i, 1 <= i <= n, then the system is in a
+    // deadlock state and if Finish[i] == False then P_i is deadlocked
     for (int i = 0; i < N; i++)
         if (!finish[i]) {
             count++;
+            printf("Deadlocked process: %d\n", i);
         }
     return count;
 }
