@@ -196,9 +196,7 @@ int rm_thread_started(int tid) {
  */
 int rm_thread_ended() {
     tcount--;
-    // printf("\nThread %d ended.\n", get_tid(pthread_self()));
     if (tcount == 0) {
-        // printf("All threads ended. Deallocating everything\n");
         for (int i = 0; i < N; i++) {
             free(maxDemand[i]);
             free(allocation[i]);
@@ -376,7 +374,6 @@ int rm_request(int request[]) {
         requests[tid][i] = 0;
     }
 
-    // printf("Thread %d has acquired resources\n", tid);
     pthread_mutex_unlock(&mutex);
     return 0;
 }
@@ -489,7 +486,8 @@ int rm_detection() {
  * beginning of the state information.
  */
 void rm_print_state(char hmsg[]) {
-    if (tcount == 0) {
+    if (tcount == 0) {  // Added safeguard since we free matrices when no
+                        // threads are active
         printf("No threads are active\n");
         return;
     }

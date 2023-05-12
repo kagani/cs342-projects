@@ -193,6 +193,7 @@ void deadlock() {
 
     for (int i = 0; i < NUMP; i++) {
         pthread_join(threadArray[i], NULL);
+        printf("thread %d joined\n", i);
     }
 }
 
