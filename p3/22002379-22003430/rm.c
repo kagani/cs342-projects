@@ -97,12 +97,23 @@ bool checkAllZero(int* arr, int N) {
 bool is_state_safe(int* request) {
     int work[M];
     bool finish[N];
-    for (int i = 0; i < M; i++) work[i] = available[i];
+    for (int i = 0; i < M; i++) work[i] = available[i] - request[i];
     for (int i = 0; i < N; i++) finish[i] = false;
+
+    for (int i = 0; i < M; i++) {
+        need[get_tid(pthread_self())][i] -= request[i];
+    }
 
     while (1) {
         int x = -1;
         for (int i = 0; i < N; i++) {
+            // printf("is_safe i = %d arrLessThan: %d\n", i,
+            //        arrLessThan(need[i], work, M));
+            // for (int j = 0; j < M; j++) {
+            //     printf("need[%d][%d] = %d, work[%d] = %d\n", i, j,
+            //     need[i][j],
+            //            i, work[i]);
+            // }
             if (!finish[i] && arrLessThan(need[i], work, M)) {
                 x = i;
                 break;
@@ -114,12 +125,17 @@ bool is_state_safe(int* request) {
             work[i] += allocation[x][i];
         }
         finish[x] = true;
+        printf("is_safe Thread %d finished.\n", x);
     }
     for (int i = 0; i < N; i++) {
         if (!finish[i]) {
-            // printf("Request denied. Deadlock will occur with id: %d.\n", i);
+            printf("is_safe tid not finished: %d.\n", i);
             return false;
         }
+    }
+
+    for (int i = 0; i < M; i++) {
+        need[get_tid(pthread_self())][i] += request[i];
     }
 
     return true;
@@ -450,7 +466,6 @@ int rm_detection() {
     for (int i = 0; i < N; i++)
         if (!finish[i]) {
             count++;
-            // printf("Deadlocked process: %d\n", i);
         }
     return count;
 }
