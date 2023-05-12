@@ -97,23 +97,38 @@ bool checkAllZero(int* arr, int N) {
 bool is_state_safe(int* request) {
     int work[M];
     bool finish[N];
-    for (int i = 0; i < M; i++) work[i] = available[i] - request[i];
+    for (int i = 0; i < M; i++)
+        work[i] = available[i] -
+                  request[i];  // Act like the request has been allocated
     for (int i = 0; i < N; i++) finish[i] = false;
 
+    // Decrease our need
     for (int i = 0; i < M; i++) {
         need[get_tid(pthread_self())][i] -= request[i];
     }
 
+    // Allocate the request
+    for (int i = 0; i < M; i++) {
+        allocation[get_tid(pthread_self())][i] += request[i];
+    }
+
+    // printf("Work: ");
+    // for (int i = 0; i < M; i++) {
+    //     printf("%d ", work[i]);
+    // }
+    // printf("\n");
+
+    // printf("Need: \n");
+    // for (int i = 0; i < N; i++) {
+    //     printf("T%d: ", i);
+    //     for (int j = 0; j < M; j++) printf("%d ", need[i][j]);
+    // }
+
+    // printf("\n");
+
     while (1) {
         int x = -1;
         for (int i = 0; i < N; i++) {
-            // printf("is_safe i = %d arrLessThan: %d\n", i,
-            //        arrLessThan(need[i], work, M));
-            // for (int j = 0; j < M; j++) {
-            //     printf("need[%d][%d] = %d, work[%d] = %d\n", i, j,
-            //     need[i][j],
-            //            i, work[i]);
-            // }
             if (!finish[i] && arrLessThan(need[i], work, M)) {
                 x = i;
                 break;
@@ -125,20 +140,26 @@ bool is_state_safe(int* request) {
             work[i] += allocation[x][i];
         }
         finish[x] = true;
-        printf("is_safe Thread %d finished.\n", x);
     }
+
+    bool ret = true;
     for (int i = 0; i < N; i++) {
         if (!finish[i]) {
-            printf("is_safe tid not finished: %d.\n", i);
-            return false;
+            ret = false;
         }
     }
 
+    // Increase our need
     for (int i = 0; i < M; i++) {
         need[get_tid(pthread_self())][i] += request[i];
     }
 
-    return true;
+    // Deallocate the request
+    for (int i = 0; i < M; i++) {
+        allocation[get_tid(pthread_self())][i] -= request[i];
+    }
+
+    return ret;
 }
 
 bool is_available(int request[]) {
@@ -334,25 +355,15 @@ int rm_request(int request[]) {
 
     // Check if the new state is available
     while (DA == 0 && !is_available(request)) {
-        // printf("Unavailable resources for thread %d\n", tid);
         pthread_cond_wait(&cvs[tid], &mutex);
     }
 
     // Check if the new state is available and safe
-    while (DA == 1 && !is_state_safe(request) && !is_available(request)) {
-        // printf("\nnew state is unsafe for thread %d >:(\n", tid);
+    while (DA == 1 && (!is_state_safe(request) || !is_available(request))) {
         pthread_cond_wait(&cvs[tid], &mutex);
     }
 
     // Safe if reached here
-    // printf("\nnew state is safe for thread %d:)\n", tid);
-
-    // Granting the request
-    // printf("Available resources before granting request: ");
-    // for (int i = 0; i < M; i++) {
-    //     printf("%d ", available[i]);
-    // }
-    // printf("\n");
 
     for (int i = 0; i < M; i++) {
         available[i] -= request[i];
@@ -360,17 +371,12 @@ int rm_request(int request[]) {
         need[tid][i] -= request[i];
     }
 
-    // printf("Available resources after granting request: ");
-    // for (int i = 0; i < M; i++) {
-    //     printf("%d ", available[i]);
-    // }
-    // printf("\n");
-
     // Remove the requests of the current thread
     for (int i = 0; i < M; i++) {
         requests[tid][i] = 0;
     }
 
+    // printf("Thread %d has acquired resources\n", tid);
     pthread_mutex_unlock(&mutex);
     return 0;
 }
@@ -407,12 +413,12 @@ int rm_release(int release[]) {
         need[tid][i] += release[i];
     }
 
-    pthread_mutex_unlock(&mutex);
-
     // wake up waiting threads
     for (int i = 0; i < N; i++) {
         pthread_cond_signal(&cvs[i]);
     }
+
+    pthread_mutex_unlock(&mutex);
 
     return 0;
 }
@@ -502,6 +508,7 @@ void rm_print_state(char hmsg[]) {
     printMat(maxDemand, N, M);
     printf("\n\nNeed:\n");
     printMat(need, N, M);
-    printf("\n##########################");
+    printf("\n##########################\n");
+    fflush(stdout);
     return;
 }
