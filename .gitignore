@@ -62,3 +62,4 @@ threadtopk
 test
 *.a
 *.o
+.vscode
