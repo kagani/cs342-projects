@@ -15,9 +15,9 @@
 void free_fc(unsigned long pfn_begin, unsigned long pfn_end);
 void frame_info(int pfn);
 void mem_used(int pid);
-void map_va(int pid, int va);
-void pte(int pid, int va);
-void map_range(int pid, int va_begin, int va_end);
+void map_va(unsigned long PID, unsigned long VA);
+void pte(unsigned long PID, unsigned long VA);
+void map_range(unsigned long PID, unsigned long VA1, unsigned long VA1);
 void map_all(int pid);
 void map_all_in(int pid);
 void all_table_size(int pid);
