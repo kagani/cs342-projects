@@ -1,6 +1,6 @@
 #include "mem_utils.h"
 
 int main() {
-    free_fc(0x561186137000, 0x5611862d5000);
+    free_fc(0, 1000000);
     return 0;
 }
