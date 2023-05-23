@@ -9,15 +9,20 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
         return;
     }
 
+    printf("kpc = %d\n", kpc);
+
     int count = 0;
     for (unsigned long i = pfn_begin; i < pfn_end; i++) {
         // Seek to the correct position
-        lseek(kpc, i * sizeof(unsigned long), SEEK_SET);
+        unsigned long long offset = i * sizeof(unsigned long);
+        lseek(kpc, offset, SEEK_SET);
 
         // Read the value
         unsigned long value;
         // read returns the number of bytes read
-        if (read(kpc, &value, sizeof(unsigned long) != sizeof(unsigned long))) {
+        int readBytes = read(kpc, &value, sizeof(unsigned long));
+
+        if (readBytes != sizeof(unsigned long)) {
             printf("Error reading from /proc/kpagecount\n");
             return;
         }

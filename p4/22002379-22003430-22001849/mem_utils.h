@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <unistd.h>
 
 /**
  * @brief find and print out (in decimal) the number of empty (i.e.,
