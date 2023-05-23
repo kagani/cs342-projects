@@ -6,6 +6,7 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
 
     if (kpc < 0) {
         printf("Error opening /proc/kpagecount\n");
+        printf("You probably forgot sudo\n");
         return;
     }
 
@@ -24,14 +25,18 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
 
         if (readBytes != sizeof(unsigned long)) {
             printf("Error reading from /proc/kpagecount\n");
-            return;
+            printf("PFN %lu is invalid\n", i);
+            printf("Free frame count between %lu-%lu=%d\n", pfn_begin, i,
+                   count);
         }
 
         // Check if the value is 0
+        // FYI: -1 is also free
+        // but haven't reclaimed by the kernel
         if (value == 0) {
             count++;
         }
     }
 
-    printf("%d\n", count);
+    printf("Free frame count between %lu-%lu=%d\n", pfn_begin, pfn_end, count);
 }
