@@ -16,18 +16,17 @@
 void free_fc(unsigned long pfnBegin, unsigned long pfnEnd);
 
 /**
- * @brief When invoked with this option, your program will print detailed
+ * @brief This function prints detailed
  * information (various flag values and mapping count) for the specified frame.
  * PFN is the frame number. The flags whose value will be printed out are those
- * that can found in the /proc/kpageflags file (see [1]). The format of the
- * output is up to you.
+ * that can found in the /proc/kpageflags file.
  *
  * @param pfn
  */
 void frame_info(unsigned long pfn);
 
 /**
- * @brief When invoked with this option, your program will find out the total
+ * @brief This function finds out the total
  * amount of virtual memory and physical memory used by the process PID (in KB).
  *
  * @param pid
@@ -35,7 +34,7 @@ void frame_info(unsigned long pfn);
 void mem_used(int pid);
 
 /**
- * @brief pvm -mapva PID VA: When invoked with this option, your program
+ * @brief pvm -mapva PID VA: When invoked with this option, program
  * will find and print out the physical address corresponding to the virtual
  * address VA for the process PID. The physical address will be printed in
  * 4 hexadecimal in the form 0x.... The printed value will be 16 digits long.
