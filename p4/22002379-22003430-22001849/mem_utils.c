@@ -1,6 +1,6 @@
 #include "mem_utils.h"
 
-void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
+void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
     // Open /proc/kpagecount
     int kpc = open("/proc/kpagecount", O_RDONLY);
 
@@ -13,7 +13,7 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
     printf("kpc = %d\n", kpc);
 
     int count = 0;
-    for (unsigned long i = pfn_begin; i < pfn_end; i++) {
+    for (unsigned long i = pfnBegin; i < pfnEnd; i++) {
         // Seek to the correct position
         unsigned long long offset = i * sizeof(unsigned long);
         lseek(kpc, offset, SEEK_SET);
@@ -26,8 +26,7 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
         if (readBytes != sizeof(unsigned long)) {
             printf("Error reading from /proc/kpagecount\n");
             printf("PFN %lu is invalid\n", i);
-            printf("Free frame count between %lu-%lu=%d\n", pfn_begin, i,
-                   count);
+            printf("Free frame count between %lu-%lu=%d\n", pfnBegin, i, count);
         }
 
         // Check if the value is 0
@@ -38,5 +37,11 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
         }
     }
 
-    printf("Free frame count between %lu-%lu=%d\n", pfn_begin, pfn_end, count);
+    printf("Free frame count between %lu-%lu=%d\n", pfnBegin, pfnEnd, count);
 }
+
+void map_va(int pid, unsigned long va) {}
+
+void pte(int pid, unsigned long va) {}
+
+void map_range(int pid, unsigned long vaBegin, unsigned long vaEnd) {}
