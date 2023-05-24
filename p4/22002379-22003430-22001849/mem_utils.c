@@ -1,6 +1,6 @@
 #include "mem_utils.h"
 
-void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
+void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
     // Open /proc/kpagecount
     int kpc = open("/proc/kpagecount", O_RDONLY);
 
@@ -11,7 +11,7 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
     }
 
     int count = 0;
-    for (unsigned long i = pfn_begin; i < pfn_end; i++) {
+    for (unsigned long i = pfnBegin; i < pfnEnd; i++) {
         // Seek to the correct position
         unsigned long long offset = i * sizeof(unsigned long);
         lseek(kpc, offset, SEEK_SET);
@@ -24,8 +24,7 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
         if (readBytes != sizeof(unsigned long)) {
             printf("Error reading from /proc/kpagecount\n");
             printf("PFN %lu is invalid\n", i);
-            printf("Free frame count between %lu-%lu=%d\n", pfn_begin, i,
-                   count);
+            printf("Free frame count between %lu-%lu=%d\n", pfnBegin, i, count);
         }
 
         // Check if the value is 0
@@ -36,46 +35,11 @@ void free_fc(unsigned long pfn_begin, unsigned long pfn_end) {
         }
     }
 
-    printf("Free frame count between %lu-%lu=%d\n", pfn_begin, pfn_end, count);
+    printf("Free frame count between %lu-%lu=%d\n", pfnBegin, pfnEnd, count);
 }
 
-/**
- * @brief
-pvm -mapva PID VA: When invoked with this option, your program
-will find and print out the physical address corresponding to the virtual
-address VA for the process PID. The physical address will be printed in
-4 hexadecimal in the form 0x.... The printed value will be 16 digits long.
-The first 4 digits will be 0x0000. 
-*/
-void mapva(unsigned long PID, unsigned long VA) {
+void map_va(int pid, unsigned long va) {}
 
-}
+void pte(int pid, unsigned long va) {}
 
-
-/**
- * @brief
-pvm -pte PID VA: When invoked with this option, your program will
-find and print out detailed information for the page corresponding to the
-virtual address VA of the process PID. The information will be obtained
-from /proc/PID/pagemap file. Numbers (physical frame number or
-swap offset) must be printed in hexadecimal form. 
-*/
-void pte(unsigned long PID, unsigned long VA) {
-
-}
-
-/**
- * @brief
-pvm -maprange PID VA1 VA2: When invoked with this option, your
-program will find and print out (page number, frame number) mappings
-for the virtual address range [VA1, VA2). For each page in the range, your
-program will print a line of information that contains the page number
-and the corresponding frame number (if any). If a page in the range is not
-a used page (i.e., is not in one of the virtual memory areas of the process),
-you will print unused instead of a frame number. If a page is a used page
-(i.e., in one of the virtual memory areas of the process), but is not in
-memory, you will print not-in-memory instead of a frame number. 
-*/
-void maprange(unsigned long PID, unsigned long VA1, unsigned long VA1) {
-
-}
+void map_range(int pid, unsigned long vaBegin, unsigned long vaEnd) {}
