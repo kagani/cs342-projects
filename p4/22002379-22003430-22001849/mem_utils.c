@@ -239,8 +239,8 @@ void mem_used(int pid) {
         }
     }
 
-    printf("Total memory: %llukb\n", totalMemorySum >> 10);
-    printf("Exclusive memory: %llukb\n", exclusiveMemorySum >> 10);
+    printf("Total physical memory: %llukb\n", totalMemorySum >> 10);
+    printf("Exclusive physical memory: %llukb\n", exclusiveMemorySum >> 10);
 }
 
 void map_va(int pid, unsigned long va) {}
