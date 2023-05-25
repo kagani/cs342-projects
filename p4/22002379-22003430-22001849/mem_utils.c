@@ -177,9 +177,10 @@ void mem_used(int pid) {
         // printf("buf = \n%s\n", buf);
         sscanf(buf, "%lx-%lx %s %ld %s %ld %s", &addrStart, &addrEnd, mode,
                &offset, dev, &inode, path);
+        unsigned long pageIdx = addrStart >> 12;
+        unsigned long pageEndIdx = addrEnd >> 12;
 
-        for (unsigned long i = addrStart; i < addrEnd; i += 4) {
-            unsigned long VPN = i >> 12;
+        for (unsigned long VPN = addrStart >> 12; VPN < pageEndIdx + 1; VPN++) {
             // Seek to correct location
             lseek(pmFd, VPN << 3, SEEK_SET);
 
@@ -215,13 +216,19 @@ void mem_used(int pid) {
                 return;
             }
 
+            unsigned long memCount = 4096;  // page size
+
+            if (VPN == pageEndIdx) {
+                memCount = addrEnd - (VPN << 12);
+            }
+
             // printf("VPN %lu - %ld\n", VPN, mapCount);
             if (mapCount == 1) {
-                exclusiveMemorySum += 4;
+                exclusiveMemorySum += memCount;
             }
 
             if (mapCount >= 1) {
-                totalMemorySum += 4;
+                totalMemorySum += memCount;
             } else {
                 printf("mapCount %ld\n", mapCount);
             }
