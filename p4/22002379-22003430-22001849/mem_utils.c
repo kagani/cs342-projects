@@ -7,6 +7,7 @@ void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
     if (kpc < 0) {
         printf("Error opening /proc/kpagecount\n");
         printf("You probably forgot sudo\n");
+        close(kpc);
         return;
     }
 
@@ -25,6 +26,8 @@ void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
             printf("Error reading from /proc/kpagecount\n");
             printf("PFN %lu is invalid\n", i);
             printf("Free frame count between %lu-%lu=%d\n", pfnBegin, i, count);
+            close(kpc);
+            return;
         }
 
         // Check if the value is 0
@@ -35,6 +38,8 @@ void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
         }
     }
 
+    close(kpc);
+
     printf("Free frame count between %lu-%lu=%d\n", pfnBegin, pfnEnd, count);
 }
 
@@ -42,8 +47,9 @@ void frame_info(unsigned long pfn) {
     int kpf = open("/proc/kpageflags", O_RDONLY);
 
     if (kpf < 0) {
-        printf("Error opening /proc/kpagecount\n");
+        printf("Error opening /proc/kpageflags\n");
         printf("You probably forgot sudo\n");
+        close(kpf);
         return;
     }
 
@@ -59,11 +65,14 @@ void frame_info(unsigned long pfn) {
     if (readBytes != sizeof(unsigned long)) {
         printf("Error reading from /proc/kpageflags\n");
         printf("PFN %lu is invalid\n", pfn);
+        close(kpf);
         return;
     }
 
     // These are specified in
     // https://www.kernel.org/doc/html/latest/admin-guide/mm/pagemap.html?highlight=kpageflags
+    // However, seem to differ from the code ???
+    // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/linux/page-flags.h
     printf("Info for PFN %lu\n", pfn);
     printf("0. LOCKED = %lu\n", value & 1);
     printf("1. ERROR = %lu\n", (value >> 1) & 1);
@@ -88,13 +97,144 @@ void frame_info(unsigned long pfn) {
     printf("20. NOPAGE = %lu\n", (value >> 20) & 1);
     printf("21. KSM = %lu\n", (value >> 21) & 1);
     printf("22. THP = %lu\n", (value >> 22) & 1);
-    printf("23. BALLOON = %lu\n", (value >> 23) & 1);
+    printf("23. OFFLINE = %lu\n", (value >> 23) & 1);
     printf("24. ZERO_PAGE = %lu\n", (value >> 24) & 1);
     printf("25. IDLE = %lu\n", (value >> 25) & 1);
-    printf("26. KPF_THP = %lu\n", (value >> 26) & 1);
+    printf("26. PGTABLE = %lu\n", (value >> 26) & 1);
 }
 
-void mem_used(int pid) {}
+void mem_used(int pid) {
+    char mapFileName[256];
+    snprintf(mapFileName, 256, "/proc/%d/maps", pid);
+    FILE *mapsFd = fopen(mapFileName, "r");
+
+    if (mapsFd < 0) {
+        printf("Error opening %s\n", mapFileName);
+        printf("You probably forgot sudo\n");
+        fclose(mapsFd);
+        return;
+    }
+
+    // Calculate virtual memory usage
+    unsigned long long sum = 0;
+    while (!feof(mapsFd)) {
+        unsigned long long addrStart = 0, addrEnd = 0;
+        char mode[8];
+        long offset;
+        char dev[10];
+        long inode;
+        char path[256];  // 256 is PATH_MAX
+
+        char buf[364];
+        if (!fgets(buf, 364, mapsFd)) {
+            break;
+        }
+
+        sscanf(buf, "%lx-%lx %s %ld %s %ld %s", &addrStart, &addrEnd, mode,
+               &offset, dev, &inode, path);
+
+        sum += (addrEnd - addrStart) >> 10;
+
+        if (strcmp(path, "[vsyscall]") == 0) {
+            break;
+        }
+    }
+
+    printf("Total virtual memory usage: %llukb\n", sum);
+    fclose(mapsFd);
+
+    // Calculate physical memory usage (exclusive and inclusive)
+    char pageMapFileName[256];
+    snprintf(pageMapFileName, 256, "/proc/%d/pagemap", pid);
+    int pmFd = open(pageMapFileName, O_RDONLY);
+
+    unsigned long long totalMemorySum = 0;
+    unsigned long long exclusiveMemorySum = 0;
+    mapsFd = fopen(mapFileName, "r");
+    int kpcFd = open("/proc/kpagecount", O_RDONLY);
+
+    if (mapsFd < 0 || kpcFd < 0) {
+        printf("Error opening %s or %s\n", mapFileName, "/proc/kpagecount");
+        printf("You probably forgot sudo\n");
+        fclose(mapsFd);
+        close(kpcFd);
+        return;
+    }
+
+    while (!feof(mapsFd)) {
+        unsigned long long addrStart = 0, addrEnd = 0;
+        char mode[8];
+        long offset;
+        char dev[10];
+        long inode;
+        char path[256];  // 256 is PATH_MAX
+
+        char buf[364];
+        if (!fgets(buf, 364, mapsFd)) {
+            break;
+        }
+
+        // printf("buf = \n%s\n", buf);
+        sscanf(buf, "%lx-%lx %s %ld %s %ld %s", &addrStart, &addrEnd, mode,
+               &offset, dev, &inode, path);
+
+        for (unsigned long i = addrStart; i < addrEnd; i += 4) {
+            unsigned long VPN = i >> 12;
+            // Seek to correct location
+            lseek(pmFd, VPN << 3, SEEK_SET);
+
+            unsigned long data = 0;
+            int readBytes = read(pmFd, &data, sizeof(unsigned long));
+
+            if (readBytes != sizeof(unsigned long)) {
+                printf("Failed to read %s\n", pageMapFileName);
+                close(pmFd);
+                close(kpcFd);
+                fclose(mapsFd);
+                return;
+            }
+
+            unsigned long isMapped = (data >> 63) & 1;    // Top bit
+            unsigned long pfn = data & 0x7FFFFFFFFFFFFF;  // Top 56 bits
+
+            if (!isMapped) {
+                continue;
+            }
+
+            lseek(kpcFd, pfn << 3, SEEK_SET);
+
+            // Read value
+            long mapCount = 0;
+            readBytes = read(kpcFd, &mapCount, sizeof(unsigned long));
+
+            if (readBytes != sizeof(unsigned long)) {
+                printf("Failed to read %s\n", "/proc/kpagecount");
+                close(pmFd);
+                close(kpcFd);
+                fclose(mapsFd);
+                return;
+            }
+
+            // printf("VPN %lu - %ld\n", VPN, mapCount);
+            if (mapCount == 1) {
+                exclusiveMemorySum += 4;
+            }
+
+            if (mapCount >= 1) {
+                totalMemorySum += 4;
+            } else {
+                printf("mapCount %ld\n", mapCount);
+            }
+        }
+
+        if (strcmp(path, "[vsyscall]") == 0) {
+            break;
+        }
+    }
+
+    printf("Total memory: %llukb\n", totalMemorySum >> 10);
+    printf("Exclusive memory: %llukb\n", exclusiveMemorySum >> 10);
+}
 
 void map_va(int pid, unsigned long va) {}
 
