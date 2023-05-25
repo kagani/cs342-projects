@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(cur, "-memused") == 0) {
         int pid;
         pid = atoi(argv[2]);
+        mem_used(pid);
     } else if (strcmp(cur, " -mapva") == 0) {
         int pid;
         unsigned long VA;
@@ -42,5 +43,6 @@ int main(int argc, char* argv[]) {
         int pid;
         pid = atoi(argv[2]);
     }
+
     return 0;
 }
