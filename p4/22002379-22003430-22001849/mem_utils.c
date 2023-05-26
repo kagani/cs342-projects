@@ -240,7 +240,31 @@ void mem_used(int pid) {
     printf("Exclusive physical memory: %llukb\n", exclusiveMemorySum >> 10);
 }
 
-void map_va(int pid, unsigned long va) {}
+void map_va(int pid, unsigned long va) {
+    char path[256];
+    snprintf(path, 256, "/proc/%d/pagemap", pid);
+    int fd = open(path, O_RDONLY);
+
+    if(fd == -1) perror("[-] Cannot open pagemap on map_va");
+
+    off_t size = lseek(fd, 0, SEEK_END);
+    off_t pageCnt = size / sizeof(uint64_t);
+
+    lseek(fd, 0, SEEK_SET);
+
+    uint64_t entry;
+    for (off_t i = 0; i < pageCnt; i++) {
+        read(fd, &entry, sizeof(uint64_t));
+        if (entry & (1ULL << 63)) {
+            if(va == i) {
+                uint64_t frameNumber = entry & ((1ULL << 55) - 1);
+                printf("0x%016lx\n", (unsigned long long)frameNumber);
+                break;
+            }
+        }
+    }
+    close(fd);
+}
 
 void pte(int pid, unsigned long va) {}
 

@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdint.h>
+
+#define PAGE_SIZE 4096
 
 /**
  * @brief find and print out (in decimal) the number of empty (i.e.,

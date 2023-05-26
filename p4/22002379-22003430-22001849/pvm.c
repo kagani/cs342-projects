@@ -17,11 +17,12 @@ int main(int argc, char* argv[]) {
         int pid;
         pid = atoi(argv[2]);
         mem_used(pid);
-    } else if (strcmp(cur, " -mapva") == 0) {
+    } else if (strcmp(cur, "-mapva") == 0) {
         int pid;
         unsigned long VA;
         pid = atoi(argv[2]);
         VA = atoll(argv[3]);
+        map_va(pid, VA);
     } else if (strcmp(cur, "-pte") == 0) {
         int pid;
         unsigned long VA;
