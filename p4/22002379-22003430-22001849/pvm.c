@@ -37,9 +37,11 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(cur, "-mapall") == 0) {
         int pid;
         pid = atoi(argv[2]);
+        map_all(pid);
     } else if (strcmp(cur, "-mapallin") == 0) {
         int pid;
         pid = atoi(argv[2]);
+        map_all_in(pid);
     } else if (strcmp(cur, "-alltablesize") == 0) {
         int pid;
         pid = atoi(argv[2]);

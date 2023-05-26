@@ -64,3 +64,4 @@ test
 *.a
 *.o
 .vscode
+.idea

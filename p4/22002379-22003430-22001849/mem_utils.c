@@ -269,3 +269,139 @@ void map_va(int pid, unsigned long va) {
 void pte(int pid, unsigned long va) {}
 
 void map_range(int pid, unsigned long vaBegin, unsigned long vaEnd) {}
+
+void map_all(int id){
+    int pid = id;
+
+    //get pagesize
+    const int pageSize = getpagesize();
+
+    //open maps & pagemap
+    char pagemapPath[100];
+    sprintf(pagemapPath, "/proc/%d/pagemap", pid);
+
+    char mapsPath[100];
+    sprintf(mapsPath, "/proc/%d/maps", pid);
+
+    FILE* maps = fopen(mapsPath, "r");
+    if (maps == NULL) {
+        printf("Error opening the file.\n");
+        return;
+    }
+
+    int pagemap = open(pagemapPath, O_RDONLY);
+    if (pagemap < 0) {
+        printf("Error opening %s", pagemapPath);
+        return;
+    }
+
+    // get mapped intervals from proc/pid/maps interval start: va1, interval end: va2
+    char line[1000];
+    while (fgets(line, sizeof(line), maps)) {
+        unsigned long long va1, va2, pagemapEntry, readBytes;
+        off_t offset;
+        if (sscanf(line, "%llx-%llx", &va1, &va2) == 2) {
+            // iterate whole interval by incrementing va1 by pagesize
+            for(;va1 < va2; va1 += pageSize) {
+                // pagemap index -> virtual page number = va / pagesize
+                offset = va1 / pageSize * sizeof(unsigned long long);
+                if(lseek(pagemap, offset, SEEK_SET) < 0) {
+                    return;
+                }
+                readBytes = read(pagemap, &pagemapEntry, sizeof(unsigned long long));
+                if (readBytes == -1) {
+                    printf("Error reading from pagemap");
+                    break;
+                }
+                if (readBytes == 0) {
+                    printf("End of pagemap");
+                    break;
+                }
+                // if entry = 0, not used so skip
+                if(pagemapEntry == 0) {
+                    continue;
+                }
+                // if 63rd bit is 1, page is present in memory
+                if (pagemapEntry & (1ULL << 63)) {
+                    // get 0-54th bits for pfn
+                    unsigned long long bitmask = 0x3FFFFFFFFFFFFF;
+                    unsigned long long result = pagemapEntry & bitmask;
+                    printf("Page %llx: Frame %llx\n", va1 / pageSize, result);
+                } else {
+                    printf("Page %llx: not-in-memory\n", va1 / pageSize);
+                }
+            }
+        }
+    }
+    fclose(maps);
+    close(pagemap);
+}
+
+void map_all_in(int id) {
+    int pid = id;
+
+    //get pagesize
+    const int pageSize = getpagesize();
+
+    //open maps & pagemap
+    char pagemapPath[100];
+    sprintf(pagemapPath, "/proc/%d/pagemap", pid);
+
+    char mapsPath[100];
+    sprintf(mapsPath, "/proc/%d/maps", pid);
+
+    FILE* maps = fopen(mapsPath, "r");
+    if (maps == NULL) {
+        printf("Error opening the file.\n");
+        return;
+    }
+
+    int pagemap = open(pagemapPath, O_RDONLY);
+    if (pagemap < 0) {
+        printf("Error opening %s", pagemapPath);
+        return;
+    }
+
+    // get mapped intervals from proc/pid/maps interval start: va1, interval end: va2
+    char line[1000];
+    while (fgets(line, sizeof(line), maps)) {
+        unsigned long long va1, va2, pagemapEntry, readBytes;
+        off_t offset;
+        if (sscanf(line, "%llx-%llx", &va1, &va2) == 2) {
+            // iterate whole interval by incrementing va1 by pagesize
+            for(;va1 < va2; va1 += pageSize) {
+                // pagemap index -> virtual page number = va / pagesize
+                offset = va1 / pageSize * sizeof(unsigned long long);
+                if(lseek(pagemap, offset, SEEK_SET) < 0) {
+                    return;
+                }
+                readBytes = read(pagemap, &pagemapEntry, sizeof(unsigned long long));
+                if (readBytes == -1) {
+                    printf("Error reading from pagemap");
+                    break;
+                }
+                if (readBytes == 0) {
+                    printf("End of pagemap");
+                    break;
+                }
+                // if entry = 0, not used so skip
+                if(pagemapEntry == 0) {
+                    continue;
+                }
+                // if 63rd bit is 1, page is present in memory
+                if (pagemapEntry & (1ULL << 63)) {
+                    // get 0-54th bits for pfn
+                    unsigned long long bitmask = 0x3FFFFFFFFFFFFF;
+                    unsigned long long result = pagemapEntry & bitmask;
+                    printf("Page %llx: Frame %llx\n", va1 / pageSize, result);
+                } else {
+                    //if not in memory, skip
+                    continue;
+                }
+            }
+        }
+    }
+    fclose(maps);
+    close(pagemap);
+}
+
