@@ -83,4 +83,5 @@ void pte(int pid, unsigned long va);
 void map_range(int pid, unsigned long vaBegin, unsigned long vaEnd);
 void map_all(int pid);
 void map_all_in(int pid);
+void map(int pid, int inMem);
 void all_table_size(int pid);
