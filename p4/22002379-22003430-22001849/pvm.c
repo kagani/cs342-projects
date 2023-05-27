@@ -28,12 +28,14 @@ int main(int argc, char* argv[]) {
         unsigned long VA;
         pid = atoi(argv[2]);
         VA = atoll(argv[3]);
+        pte(pid, VA);
     } else if (strcmp(cur, "-maprange") == 0) {
         int pid;
         unsigned long VA1, VA2;
         pid = atoi(argv[2]);
         VA1 = atoll(argv[3]);
         VA2 = atoll(argv[4]);
+        map_range(pid, VA1, VA2);
     } else if (strcmp(cur, "-mapall") == 0) {
         int pid;
         pid = atoi(argv[2]);
