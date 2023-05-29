@@ -247,22 +247,20 @@ void map_va(int pid, unsigned long va) {
 
     if(fd == -1) perror("[-] Cannot open pagemap on map_va");
 
-    off_t size = lseek(fd, 0, SEEK_END);
-    off_t pageCnt = size / sizeof(uint64_t);
+    unsigned long vpn = (va>>12);
 
-    lseek(fd, 0, SEEK_SET);
-
+    lseek(fd, vpn, SEEK_SET);
+    
     uint64_t entry;
-    for (off_t i = 0; i < pageCnt; i++) {
-        read(fd, &entry, sizeof(uint64_t));
-        if (entry & (1ULL << 63)) {
-            if(va == i) {
-                uint64_t frameNumber = entry & ((1ULL << 55) - 1);
-                printf("0x%016lx\n", (unsigned long long)frameNumber);
-                break;
-            }
-        }
+    read(fd, &entry, sizeof(uint64_t));
+    if (entry & (1ULL << 63)) {
+        uint64_t frameNumber = entry & ((1ULL << 55) - 1);
+        printf("0x%016lx\n", (unsigned long long)frameNumber);
     }
+    else {
+        printf("VA not in memory.\n");
+    }
+
     close(fd);
 }
 
@@ -273,65 +271,54 @@ void pte(int pid, unsigned long va) {
     printf("\n======================================================");
     if(fd == -1) perror("[-] Cannot open pagemap on pte");
 
-    off_t size = lseek(fd, 0, SEEK_END);
-    off_t pageCnt = size / sizeof(uint64_t);
-
-    lseek(fd, 0, SEEK_SET);
-
+    unsigned long vpn = (va>>12);
+    lseek(fd, vpn, SEEK_SET);
     uint64_t entry;
-    for (off_t i = 0; i < pageCnt; i++) {
-        read(fd, &entry, sizeof(uint64_t));
-        if (entry & (1ULL << 63)) {
-            printf("\nEntry %llu ==> %lx", (long long)i, entry);
-            if(va == i) {
-                printf("\nVirtual Address: %lu is in physical memory.", va);
-                uint64_t frameNumber = entry & ((1ULL << 55) - 1);
+    read(fd, &entry, sizeof(uint64_t));
 
-                // check if page is 
-                if(entry & (1ULL << 62)) {
-                    printf("\nVirtual Address: %lu is swapped out.", va);
-                    printf("\nSwap Offset of the VA = 0x%016lx", (unsigned long long)frameNumber);
-                }
-                else {
-                    printf("\nVirtual Address: %lu is not swapped out.", va);
-                    printf("\nFrame number of the VA = 0x%016lx", (unsigned long long)frameNumber);
-                }
-                break;
-            }
+    if (entry & (1ULL << 63)) {
+        printf("\nVirtual Address: 0x%lx is in physical memory.", va);
+        uint64_t frameNumber = entry & ((1ULL << 55) - 1);
+        if(entry & (1ULL << 62)) {
+            printf("\nVirtual Address: 0x%lx is swapped out.", va);
+            printf("\nSwap Offset of the VA = 0x%016lx", (unsigned long long)frameNumber);
         }
+        else {
+            printf("\nVirtual Address: 0x%lx is not swapped out.", va);
+            printf("\nFrame number of the VA = 0x%016lx", (unsigned long long)frameNumber);
+        }   
     }
-    printf("\nVirtual Address: %lu is not in physical memory.", va);
+    else {
+        printf("\nVirtual Address: 0x%lx is not in physical memory.", va);
+        printf("\n======================================================\n");
+        close(fd);
+    }
     printf("\n======================================================\n");
-    close(fd);
 }
 
 void map_range(int pid, unsigned long vaBegin, unsigned long vaEnd) {
-        char path[256];
+    char path[256];
     snprintf(path, 256, "/proc/%d/pagemap", pid);
     int fd = open(path, O_RDONLY);
     printf("\n======================================================");
     if(fd == -1) perror("[-] Cannot open pagemap on map_range");
 
-    off_t size = lseek(fd, 0, SEEK_END);
-    off_t pageCnt = size / sizeof(uint64_t);
-
-    lseek(fd, 0, SEEK_SET);
+    unsigned long startVpn = vaBegin >> 12;
+    unsigned long endVpn = vaEnd >> 12;
+    lseek(fd, startVpn, SEEK_SET);
 
     uint64_t entry;
-    for (off_t i = 0; i < pageCnt; i++) {
+    for (off_t i = startVpn; i <= endVpn; i=i+16) {
+        printf("\n===>%lx", i);
         read(fd, &entry, sizeof(uint64_t));
-        if(i >= vaBegin & i < vaEnd) {
-            if (entry & (1ULL << 63)) {
-                uint64_t frameNumber = entry & ((1ULL << 55) - 1);
-                printf("\nVirtual Address: %lu ==> Frame Number: %lu", i, frameNumber);
-            }
-            else {
-                printf("\nVirtual Address: %lu unused.", i);
-            }
+        if (entry & (1ULL << 63)) {
+            uint64_t frameNumber = entry & ((1ULL << 55) - 1);
+            printf("\nVirtual Address: %lu ==> Frame Number: 0x%lx", i, frameNumber);
         }
         else {
-            break;
+            printf("\nVirtual Address: %lu unused.", i);
         }
+
     }
     printf("\n======================================================\n");
     close(fd);
