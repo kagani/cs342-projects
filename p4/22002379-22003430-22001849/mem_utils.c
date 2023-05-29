@@ -392,10 +392,6 @@ void map(int id, int inMem){
                     printf("End of pagemap");
                     break;
                 }
-                // if entry = 0, not used so skip
-                if(pagemapEntry == 0) {
-                    continue;
-                }
                 // if 63rd bit is 1, page is present in memory
                 if (pagemapEntry & (1ULL << 63)) {
                     // get 0-54th bits for pfn
