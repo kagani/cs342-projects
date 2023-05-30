@@ -23,9 +23,10 @@ void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
         int readBytes = read(kpc, &value, sizeof(unsigned long));
 
         if (readBytes != sizeof(unsigned long)) {
-            printf("Error reading from /proc/kpagecount\n");
-            printf("PFN %lu is invalid\n", i);
-            printf("Free frame count between %lu-%lu=%d\n", pfnBegin, i, count);
+            fprintf(stderr, "Error reading from /proc/kpagecount\n");
+            fprintf(stderr, "PFN %lu is invalid\n", i);
+            printf("Free frame count between %lu-%lu=%d\n", pfnBegin, pfnEnd,
+                   count);
             close(kpc);
             return;
         }
