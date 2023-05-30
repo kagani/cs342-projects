@@ -373,7 +373,7 @@ void map(int id, int inMem) {
                 // if 63rd bit is 1, page is present in memory
                 if (pagemapEntry & (1ULL << 63)) {
                     // get 0-54th bits for pfn
-                    unsigned long long bitmask = 0x3FFFFFFFFFFFFF;
+                    unsigned long long bitmask = 0x7FFFFFFFFFFFFF;
                     unsigned long long result = pagemapEntry & bitmask;
                     printf("Page %llx: Frame %llx\n", va1 / pageSize, result);
                 } else {
