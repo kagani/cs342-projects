@@ -106,7 +106,7 @@ void frame_info(unsigned long pfn) {
 void mem_used(int pid) {
     char mapFileName[256];
     snprintf(mapFileName, 256, "/proc/%d/maps", pid);
-    FILE *mapsFd = fopen(mapFileName, "r");
+    FILE* mapsFd = fopen(mapFileName, "r");
 
     if (mapsFd < 0) {
         printf("Error opening %s\n", mapFileName);
@@ -140,7 +140,7 @@ void mem_used(int pid) {
         }
     }
 
-    printf("Total virtual memory usage: %llukb\n", sum);
+    printf("(pid=%d) memused: virtual=%llu KB, ", pid, sum);
     fclose(mapsFd);
 
     // Calculate physical memory usage (exclusive and inclusive)
@@ -188,11 +188,7 @@ void mem_used(int pid) {
             int readBytes = read(pmFd, &data, sizeof(unsigned long));
 
             if (readBytes != sizeof(unsigned long)) {
-                printf("Failed to read %s\n", pageMapFileName);
-                close(pmFd);
-                close(kpcFd);
-                fclose(mapsFd);
-                return;
+                continue;
             }
 
             unsigned long isMapped = (data >> 63) & 1;    // Top bit
@@ -230,14 +226,13 @@ void mem_used(int pid) {
             // RSS
             if (mapCount >= 1) {
                 totalMemorySum += memCount;
-            } else {
-                printf("mapCount %ld\n", mapCount);
             }
         }
     }
 
-    printf("Total physical memory: %llukb\n", totalMemorySum >> 10);
-    printf("Exclusive physical memory: %llukb\n", exclusiveMemorySum >> 10);
+    printf("pmem_all=%llu KB, ", totalMemorySum >> 10);
+    printf("pmem_alone=%llu KB, ", exclusiveMemorySum >> 10);
+    printf("mappedonce=%llu KB\n", exclusiveMemorySum >> 10);
 }
 
 void map_va(int pid, unsigned long va) {
@@ -245,19 +240,18 @@ void map_va(int pid, unsigned long va) {
     snprintf(path, 256, "/proc/%d/pagemap", pid);
     int fd = open(path, O_RDONLY);
 
-    if(fd == -1) perror("[-] Cannot open pagemap on map_va");
+    if (fd == -1) perror("[-] Cannot open pagemap on map_va");
 
-    unsigned long vpn = (va>>12);
+    unsigned long vpn = (va >> 12);
 
     lseek(fd, vpn, SEEK_SET);
-    
+
     uint64_t entry;
     read(fd, &entry, sizeof(uint64_t));
     if (entry & (1ULL << 63)) {
         uint64_t frameNumber = entry & ((1ULL << 55) - 1);
         printf("0x%016lx\n", (unsigned long long)frameNumber);
-    }
-    else {
+    } else {
         printf("VA not in memory.\n");
     }
 
@@ -269,9 +263,9 @@ void pte(int pid, unsigned long va) {
     snprintf(path, 256, "/proc/%d/pagemap", pid);
     int fd = open(path, O_RDONLY);
     printf("\n======================================================");
-    if(fd == -1) perror("[-] Cannot open pagemap on pte");
+    if (fd == -1) perror("[-] Cannot open pagemap on pte");
 
-    unsigned long vpn = (va>>12);
+    unsigned long vpn = (va >> 12);
     lseek(fd, vpn, SEEK_SET);
     uint64_t entry;
     read(fd, &entry, sizeof(uint64_t));
@@ -279,16 +273,16 @@ void pte(int pid, unsigned long va) {
     if (entry & (1ULL << 63)) {
         printf("\nVirtual Address: 0x%lx is in physical memory.", va);
         uint64_t frameNumber = entry & ((1ULL << 55) - 1);
-        if(entry & (1ULL << 62)) {
+        if (entry & (1ULL << 62)) {
             printf("\nVirtual Address: 0x%lx is swapped out.", va);
-            printf("\nSwap Offset of the VA = 0x%016lx", (unsigned long long)frameNumber);
-        }
-        else {
+            printf("\nSwap Offset of the VA = 0x%016lx",
+                   (unsigned long long)frameNumber);
+        } else {
             printf("\nVirtual Address: 0x%lx is not swapped out.", va);
-            printf("\nFrame number of the VA = 0x%016lx", (unsigned long long)frameNumber);
-        }   
-    }
-    else {
+            printf("\nFrame number of the VA = 0x%016lx",
+                   (unsigned long long)frameNumber);
+        }
+    } else {
         printf("\nVirtual Address: 0x%lx is not in physical memory.", va);
         printf("\n======================================================\n");
         close(fd);
@@ -301,44 +295,39 @@ void map_range(int pid, unsigned long vaBegin, unsigned long vaEnd) {
     snprintf(path, 256, "/proc/%d/pagemap", pid);
     int fd = open(path, O_RDONLY);
     printf("\n======================================================");
-    if(fd == -1) perror("[-] Cannot open pagemap on map_range");
+    if (fd == -1) perror("[-] Cannot open pagemap on map_range");
 
     unsigned long startVpn = vaBegin >> 12;
     unsigned long endVpn = vaEnd >> 12;
     lseek(fd, startVpn, SEEK_SET);
 
     uint64_t entry;
-    for (off_t i = startVpn; i <= endVpn; i=i+16) {
+    for (off_t i = startVpn; i <= endVpn; i = i + 16) {
         printf("\n===>%lx", i);
         read(fd, &entry, sizeof(uint64_t));
         if (entry & (1ULL << 63)) {
             uint64_t frameNumber = entry & ((1ULL << 55) - 1);
-            printf("\nVirtual Address: %lu ==> Frame Number: 0x%lx", i, frameNumber);
-        }
-        else {
+            printf("\nVirtual Address: %lu ==> Frame Number: 0x%lx", i,
+                   frameNumber);
+        } else {
             printf("\nVirtual Address: %lu unused.", i);
         }
-
     }
     printf("\n======================================================\n");
     close(fd);
 }
 
-void map_all(int id){
-    map(id, 0);
-}
+void map_all(int id) { map(id, 0); }
 
-void map_all_in(int id) {
-    map(id, 1);
-}
+void map_all_in(int id) { map(id, 1); }
 
-void map(int id, int inMem){
+void map(int id, int inMem) {
     int pid = id;
 
-    //get pagesize
+    // get pagesize
     const int pageSize = getpagesize();
 
-    //open maps & pagemap
+    // open maps & pagemap
     char pagemapPath[100];
     sprintf(pagemapPath, "/proc/%d/pagemap", pid);
 
@@ -357,20 +346,22 @@ void map(int id, int inMem){
         return;
     }
 
-    // get mapped intervals from proc/pid/maps interval start: va1, interval end: va2
+    // get mapped intervals from proc/pid/maps interval start: va1, interval
+    // end: va2
     char line[1000];
     while (fgets(line, sizeof(line), maps)) {
         unsigned long long va1, va2, pagemapEntry, readBytes;
         off_t offset;
         if (sscanf(line, "%llx-%llx", &va1, &va2) == 2) {
             // iterate whole interval by incrementing va1 by pagesize
-            for(;va1 < va2; va1 += pageSize) {
+            for (; va1 < va2; va1 += pageSize) {
                 // pagemap index -> virtual page number = va / pagesize
                 offset = va1 / pageSize * sizeof(unsigned long long);
-                if(lseek(pagemap, offset, SEEK_SET) < 0) {
+                if (lseek(pagemap, offset, SEEK_SET) < 0) {
                     return;
                 }
-                readBytes = read(pagemap, &pagemapEntry, sizeof(unsigned long long));
+                readBytes =
+                    read(pagemap, &pagemapEntry, sizeof(unsigned long long));
                 if (readBytes == -1) {
                     printf("Error reading from pagemap");
                     break;
@@ -386,13 +377,11 @@ void map(int id, int inMem){
                     unsigned long long result = pagemapEntry & bitmask;
                     printf("Page %llx: Frame %llx\n", va1 / pageSize, result);
                 } else {
-                    if(inMem == 0) {
+                    if (inMem == 0) {
                         printf("Page %llx: not-in-memory\n", va1 / pageSize);
-                    }
-                    else {
+                    } else {
                         continue;
                     }
-
                 }
             }
         }
@@ -400,4 +389,3 @@ void map(int id, int inMem){
     fclose(maps);
     close(pagemap);
 }
-
