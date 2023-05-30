@@ -5,8 +5,8 @@ void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
     int kpc = open("/proc/kpagecount", O_RDONLY);
 
     if (kpc < 0) {
-        printf("Error opening /proc/kpagecount\n");
-        printf("You probably forgot sudo\n");
+        fprintf(stderr, "Error opening /proc/kpagecount\n");
+        fprintf(stderr, "You probably forgot sudo\n");
         close(kpc);
         return;
     }
