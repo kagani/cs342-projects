@@ -387,3 +387,5 @@ void map(int id, int inMem) {
     fclose(maps);
     close(pagemap);
 }
+
+void all_table_size(int pid) {}
