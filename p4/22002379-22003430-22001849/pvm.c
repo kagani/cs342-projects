@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
             "of process PID\n\n");
         printf("   -alltablesize PID\n");
         printf("       print total page table size for process PID\n");
-        return -1;
+        return 0;
     }
 
     char* arg = argv[1];

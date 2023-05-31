@@ -1,4 +1,6 @@
 #include "mem_utils.h"
+#define PAGE_SIZE 4096
+#define PAGE_SHIFT 12
 
 void free_fc(unsigned long pfnBegin, unsigned long pfnEnd) {
     // Open /proc/kpagecount
@@ -389,4 +391,85 @@ void map(int id, int inMem) {
     close(pagemap);
 }
 
-void all_table_size(int pid) {}
+void all_table_size(int pid) {
+    char mapsPath[256];
+    snprintf(mapsPath, 256, "/proc/%d/maps", pid);
+
+    FILE* mapsFd = fopen(mapsPath, "r");
+
+    if (mapsFd <= 0) {
+        printf("Error opening %s.\n", mapsPath);
+        return;
+    }
+
+    char line[356];
+
+    // Each individual table can have 512 entries
+    int level1Count = 1;  // Max 1 = 2^0
+    int level2Count = 0;  // Max 512 = 2^9
+    int level3Count = 0;  // Max 512 * 512 = 2^18
+    int level4Count = 0;  // Max 512 * 512 * 512 = 2^27
+
+    // Yes, I know how this looks.
+    // But it works ¯\_(ツ)_/¯
+    char* level2 = (char*)malloc(512);
+    char* level3 = (char*)malloc(512 * 512);
+    char* level4 = (char*)malloc(512 * 512 * 512);
+
+    for (int i = 0; i < 1lu << 9; i++) {
+        level2[i] = 0;
+    }
+
+    for (int i = 0; i < 1LU << 18; i++) {
+        level3[i] = 0;
+    }
+
+    for (int i = 0; i < 1LU << 27; i++) {
+        level4[i] = 0;
+    }
+
+    while (!feof(mapsFd)) {
+        if (fgets(line, sizeof(line), mapsFd) == NULL) {
+            break;
+        }
+
+        unsigned long vaBegin = 0, vaEnd = 0;
+        sscanf(line, "%lx-%lx", &vaBegin, &vaEnd);
+
+        for (unsigned long i = vaBegin >> 12; i < vaEnd >> 12; i++) {
+            unsigned long pml4Index = i & 0x1ff;  // level 4 index (not needed)
+            unsigned long pdptIndex = (i >> 9) & 0x1ff;  // level 3 index
+            unsigned long pdIndex = (i >> 18) & 0x1ff;   // level 2 index
+            unsigned long ptIndex = (i >> 27) & 0x1ff;   // level 1 index
+
+            // Create a mask to check if the entry is present
+            if (!level2[ptIndex]) {
+                level2[ptIndex] = 1;
+                level2Count++;
+            }
+
+            if (!level3[(ptIndex << 9) + pdIndex]) {
+                level3[(ptIndex << 9) + pdIndex] = 1;
+                level3Count++;
+            }
+
+            if (!level4[(ptIndex << 9) + (pdIndex << 18) + pdptIndex]) {
+                level4[(ptIndex << 9) + (pdIndex << 18) + pdptIndex] = 1;
+                level4Count++;
+            }
+        }
+    }
+
+    printf(
+        "(pid=%d) total memory occupied by 4-level page table: %lu KB (%lu "
+        "frames)\n",
+        pid, (level1Count + level2Count + level3Count + level4Count) << 2,
+        (level1Count + level2Count + level3Count + level4Count));
+    printf(
+        "(pid=%d) number of page tables used: level1=%d, level2=%d, "
+        "level3=%d, level4=%d\n",
+        pid, level1Count, level2Count, level3Count, level4Count);
+    free(level2);
+    free(level3);
+    free(level4);
+}
